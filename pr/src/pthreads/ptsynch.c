@@ -50,7 +50,7 @@ void _PR_InitLocks(void)
     rv = _PT_PTHREAD_MUTEXATTR_INIT(&_pt_mattr);
     PR_ASSERT(0 == rv);
 
-#if (defined(LINUX) && (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2)) || \
+#if (defined(LINUX) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2))) || \
     (defined(FREEBSD) && __FreeBSD_version > 700055)
     rv = pthread_mutexattr_settype(&_pt_mattr, PTHREAD_MUTEX_ADAPTIVE_NP);
     PR_ASSERT(0 == rv);
