@@ -151,11 +151,6 @@ int main(int argc, char **argv)
     }
     PL_DestroyOptState(opt);
 
-#if defined(WIN16)
-    printf("attach: This test is not valid for Win16\n");
-    goto exit_now;
-#endif
-
     if(0 == count) {
         count = DEFAULT_COUNT;
     }

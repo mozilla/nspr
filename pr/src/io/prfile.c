@@ -396,8 +396,6 @@ PR_IMPLEMENT(PRInt32) PR_GetSysfdTableMax(void)
      * There is a systemwide limit of 65536 user handles.
      */
     return 16384;
-#elif defined (WIN16)
-    return FOPEN_MAX;
 #elif defined(XP_OS2)
     ULONG ulReqCount = 0;
     ULONG ulCurMaxFH = 0;
@@ -452,7 +450,7 @@ PR_IMPLEMENT(PRInt32) PR_SetSysfdTableSize(int table_size)
     }
     return tableMax;
 #elif defined(AIX) || defined(QNX) \
-        || defined(WIN32) || defined(WIN16)
+        || defined(WIN32)
     PR_SetError(PR_NOT_IMPLEMENTED_ERROR, 0);
     return -1;
 #else
@@ -569,12 +567,7 @@ PR_IMPLEMENT(PRFileDesc*) PR_ImportPipe(PROsfd osfd)
 }
 
 #ifndef NO_NSPR_10_SUPPORT
-/*
-** PR_Stat() for Win16 is defined in w16io.c
-** it is a hack to circumvent problems in Gromit and Java
-** See also: BugSplat: 98516.
-*/
-#if !defined(WIN16)
+
 /*
  * This function is supposed to be for backward compatibility with
  * nspr 1.0.  Therefore, it still uses the nspr 1.0 error-reporting
@@ -605,7 +598,6 @@ PR_IMPLEMENT(PRInt32) PR_Stat(const char *name, struct stat *buf)
     return rv;
 }
 
-#endif /* !defined(WIN16)  */
 #endif /* ! NO_NSPR_10_SUPPORT */
 
 PR_IMPLEMENT(PRStatus) PR_LockFile(PRFileDesc *fd)

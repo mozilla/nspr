@@ -32,15 +32,9 @@ static void PrintProgress(PRIntn line)
     failed = failed || (!should && did);
     if (debug > 0)
     {
-#if defined(WIN16)
-        printf(
-            "@ line %d destructor should%s have been called and was%s\n",
-            line, ((should) ? "" : " NOT"), ((did) ? "" : " NOT"));
-#else
         PR_fprintf(
             fout, "@ line %d destructor should%s have been called and was%s\n",
             line, ((should) ? "" : " NOT"), ((did) ? "" : " NOT"));
-#endif
     }
 }  /* PrintProgress */
 
@@ -270,13 +264,8 @@ static PRIntn PR_CALLBACK Tpd(PRIntn argc, char **argv)
 
     PrintProgress(__LINE__);
 
-#if defined(WIN16)
-    printf(
-        "%s\n",((PR_TRUE == failed) ? "FAILED" : "PASSED"));
-#else
     (void)PR_fprintf(
         fout, "%s\n",((PR_TRUE == failed) ? "FAILED" : "PASSED"));
-#endif
 
     return 0;
 

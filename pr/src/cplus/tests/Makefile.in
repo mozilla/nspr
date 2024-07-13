@@ -15,10 +15,6 @@ include $(MOD_DEPTH)/config/autoconf.mk
 
 include $(topsrcdir)/config/config.mk
 
-ifeq ($(OS_TARGET), WIN16)
-OS_CFLAGS = $(OS_EXE_CFLAGS)
-endif
-
 CXXSRCS =           \
 	ranfile.cpp     \
 	thread.cpp      \
@@ -67,14 +63,9 @@ ifeq ($(OS_ARCH), SunOS)
 endif # SunOS
 
 ifeq ($(OS_ARCH), WINNT)
-ifeq ($(OS_TARGET), WIN16)
-  LIBPR = $(dist_libdir)/nspr$(MOD_MAJOR_VERSION).lib
-  LIBPL = $(dist_libdir)/plc$(MOD_MAJOR_VERSION).lib
-else
   LDOPTS = -NOLOGO -DEBUG -INCREMENTAL:NO
   LIBPR = $(dist_libdir)/libnspr$(MOD_MAJOR_VERSION).$(LIB_SUFFIX)
   LIBPL = $(dist_libdir)/libplc$(MOD_MAJOR_VERSION).$(LIB_SUFFIX)
-endif
 endif
 
 ifeq ($(OS_ARCH),OS2)
@@ -167,23 +158,7 @@ else
 $(OBJDIR)/%$(PROG_SUFFIX): $(OBJDIR)/%.$(OBJ_SUFFIX)
 	@$(MAKE_OBJDIR)
 ifeq ($(OS_ARCH), WINNT)
-ifeq ($(OS_TARGET),WIN16)
-	echo system windows         >w16link
-	echo option map             >>w16link
-	echo option stack=10K       >>w16link
-	echo option heapsize=32K    >>w16link
-	echo debug $(DEBUGTYPE) all >>w16link
-	echo name $@                >>w16link
-	echo file                   >>w16link
-	echo $<                     >>w16link
-	echo library                >>w16link
-	echo $(LIBPR),	            >>w16link
-	echo $(LIBPL),	            >>w16link
-	echo winsock.lib            >>w16link
-	wlink @w16link.
-else
 	link $(LDOPTS) $< $(LIBPR) $(LIBPL) ws2_32.lib -out:$@
-endif
 else
 ifeq ($(OS_ARCH),OS2)
 	$(LINK) $(LDOPTS) $< $(LIBGC) $(LIBPLC) $(LIBPR) $(OS_LIBS) $(EXTRA_LIBS) -o $@

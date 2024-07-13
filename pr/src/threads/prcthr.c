@@ -204,7 +204,7 @@ PR_IMPLEMENT(PRStatus) PR_Interrupt(PRThread *thread)
              * _PR_Unblock_IO_Wait().  On return lock is
              * released.
              */
-#if defined(XP_UNIX) || defined(WINNT) || defined(WIN16)
+#if defined(XP_UNIX) || defined(WINNT)
             if (!(thread->flags & _PR_INTERRUPT_BLOCKED)) {
                 _PR_Unblock_IO_Wait(thread);
             }

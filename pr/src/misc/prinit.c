@@ -181,13 +181,6 @@ static void _PR_InitStuff(void)
 
     _PR_InitThreads(PR_USER_THREAD, PR_PRIORITY_NORMAL, 0);
 
-#ifdef WIN16
-    {
-        PRInt32 top;   /* artificial top of stack, win16 */
-        _pr_top_of_task_stack = (char *) &top;
-    }
-#endif
-
 #ifndef _PR_GLOBAL_THREADS_ONLY
     _PR_InitCPUs();
 #endif

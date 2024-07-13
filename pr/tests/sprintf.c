@@ -236,8 +236,6 @@ static void test_ll(char *pattern, char *spattern, PRInt64 l)
         (strncmp(s, sbuf, sizeof(sbuf)) != 0)) {
 #if PR_BYTES_PER_LONG == 8
 #define FORMAT_SPEC "%ld"
-#elif defined(WIN16)
-#define FORMAT_SPEC "%Ld"
 #elif defined(WIN32)
 #define FORMAT_SPEC "%I64d"
 #else
@@ -315,9 +313,6 @@ static void TestLL(void)
 
 #if PR_BYTES_PER_LONG == 8
     static char *sformats[] = { "ld", "lo", "lx", "lu" };
-#elif defined(WIN16)
-    /* Watcom uses the format string "%Ld" instead of "%lld". */
-    static char *sformats[] = { "Ld", "Lo", "Lx", "Lu" };
 #elif defined(WIN32)
     static char *sformats[] = { "I64d", "I64o", "I64x", "I64u" };
 #else

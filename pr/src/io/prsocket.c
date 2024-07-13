@@ -307,7 +307,7 @@ static PRStatus PR_CALLBACK SocketConnectContinue(
     }
     return PR_SUCCESS;
 
-#elif defined(WIN32) || defined(WIN16)
+#elif defined(WIN32)
 
     if (out_flags & PR_POLL_EXCEPT) {
         int len = sizeof(err);

@@ -489,39 +489,22 @@ PR_IMPLEMENT(void) PR_Free(void *ptr)
 */
 PR_IMPLEMENT(void *) PR_Malloc(PRUint32 size)
 {
-#if defined (WIN16)
-    return PR_MD_malloc( (size_t) size);
-#else
     return malloc(size);
-#endif
 }
 
 PR_IMPLEMENT(void *) PR_Calloc(PRUint32 nelem, PRUint32 elsize)
 {
-#if defined (WIN16)
-    return PR_MD_calloc( (size_t)nelem, (size_t)elsize );
-
-#else
     return calloc(nelem, elsize);
-#endif
 }
 
 PR_IMPLEMENT(void *) PR_Realloc(void *ptr, PRUint32 size)
 {
-#if defined (WIN16)
-    return PR_MD_realloc( ptr, (size_t) size);
-#else
     return realloc(ptr, size);
-#endif
 }
 
 PR_IMPLEMENT(void) PR_Free(void *ptr)
 {
-#if defined (WIN16)
-    PR_MD_free( ptr );
-#else
     free(ptr);
-#endif
 }
 
 #endif /* _PR_ZONE_ALLOCATOR */

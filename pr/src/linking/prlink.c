@@ -751,12 +751,10 @@ pr_FindSymbolInLib(PRLibrary *lm, const char *name)
         }
         /*
         ** If the symbol was not found in the static table then check if
-        ** the symbol was exported in the DLL... Win16 only!!
+        ** the symbol was exported in the DLL...
         */
-#if !defined(WIN16)
         PR_SetError(PR_FIND_SYMBOL_ERROR, 0);
         return (void*)NULL;
-#endif
     }
 
 #ifdef XP_OS2

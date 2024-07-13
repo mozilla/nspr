@@ -2249,7 +2249,6 @@ int main(int argc, char **argv)
 
     /* File transmission test can not be done in Symbian OS because of
      * large file's size and the incomplete mmap() implementation. */
-#if !defined(WIN16)
     /*
     ** The 'transmit file' test does not run because
     ** transmit file is not implemented in NSPR yet.
@@ -2273,7 +2272,6 @@ int main(int argc, char **argv)
     } else {
         printf("TCP_Socket_Client_Server_Test Passed\n");
     }
-#endif
 
 done:
     PR_Cleanup();

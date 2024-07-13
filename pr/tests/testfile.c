@@ -45,11 +45,7 @@ PRMonitor *mon;
 PRInt32 count;
 int thread_count;
 
-#ifdef WIN16
-#define BUF_DATA_SIZE   256 * 120
-#else
 #define BUF_DATA_SIZE   256 * 1024
-#endif
 
 #define NUM_RDWR_THREADS    10
 #define NUM_DIRTEST_THREADS 4

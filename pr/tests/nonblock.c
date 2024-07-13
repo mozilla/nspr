@@ -18,14 +18,7 @@
 
 #define NUMBER_ROUNDS 5
 
-#if defined(WIN16)
-/*
-** Make win16 unit_time interval 300 milliseconds, others get 100
-*/
-#define UNIT_TIME  200       /* unit time in milliseconds */
-#else
 #define UNIT_TIME  100       /* unit time in milliseconds */
-#endif
 #define CHUNK_SIZE 10
 #undef USE_PR_SELECT         /* If defined, we use PR_Select.
                               * If not defined, use PR_Poll instead. */
