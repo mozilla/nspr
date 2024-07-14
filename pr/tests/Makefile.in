@@ -392,7 +392,7 @@ endif # AIX_PRE_4_2
 
 export:: $(TARGETS)
 clean::
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) runtests
 
 # The following tests call BSD socket functions, so they need to link
 # with -lsocket on some platforms.
