@@ -21,13 +21,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(XP_OS2)
-#define INCL_DOSFILEMGR
-#include <os2.h>
-#include <getopt.h>
-#include <errno.h>
-#endif /* XP_OS2 */
-
 static int _debug_on = 0;
 
 #ifdef WINCE
@@ -63,11 +56,7 @@ typedef struct File_Rdwr_Param {
 } File_Rdwr_Param;
 
 #ifdef XP_PC
-#ifdef XP_OS2
-char *TEST_DIR = "prdir";
-#else
 char *TEST_DIR = "C:\\temp\\prdir";
-#endif
 char *FILE_NAME = "pr_testfile";
 char *HIDDEN_FILE_NAME = "hidden_pr_testfile";
 #else
@@ -97,7 +86,7 @@ PRThread* create_new_thread(PRThreadType type,
 
     PR_ASSERT(state == PR_UNJOINABLE_THREAD);
 
-#if defined(_PR_PTHREADS) || defined(WIN32) || defined(XP_OS2)
+#if defined(_PR_PTHREADS) || defined(WIN32)
 
     switch(index %  4) {
         case 0:
@@ -124,18 +113,6 @@ PRThread* create_new_thread(PRThreadType type,
         }
         else {
             return (NULL);
-        }
-#elif defined(XP_OS2)
-        TID tid;
-
-        tid = (TID)_beginthread((void(* _Optlink)(void*))start,
-                                NULL, 32768, arg);
-        if (tid == -1) {
-            printf("_beginthread failed. errno %d\n", errno);
-            return (NULL);
-        }
-        else {
-            return((PRThread *) tid);
         }
 #else
         HANDLE thandle;
@@ -645,7 +622,7 @@ static PRInt32 PR_CALLBACK DirTest(void *arg)
         }
         PR_Close(fd_file);
     }
-#if defined(XP_UNIX) || (defined(XP_PC) && defined(WIN32)) || defined(XP_OS2)
+#if defined(XP_UNIX) || (defined(XP_PC) && defined(WIN32))
     /*
      * Create a hidden file - a platform-dependent operation
      */
@@ -696,16 +673,6 @@ static PRInt32 PR_CALLBACK DirTest(void *arg)
     }
     CloseHandle(hfile);
 
-#elif defined(OS2)
-    DPRINTF(("Creating hidden test file %s\n",pathname));
-    fd_file = PR_Open(pathname, PR_RDWR | PR_CREATE_FILE, (int)FILE_HIDDEN);
-
-    if (fd_file == NULL) {
-        printf("testfile failed to create/open hidden file %s [%d, %d]\n",
-               pathname, PR_GetError(), PR_GetOSError());
-        return -1;
-    }
-    PR_Close(fd_file);
 #endif  /* XP_UNIX */
 
 #endif  /* XP_UNIX || (XP_PC && WIN32) */
@@ -730,7 +697,7 @@ static PRInt32 PR_CALLBACK DirTest(void *arg)
      * List all files, including hidden files
      */
     DPRINTF(("Listing all files in directory %s\n",TEST_DIR));
-#if defined(XP_UNIX) || (defined(XP_PC) && defined(WIN32)) || defined(XP_OS2)
+#if defined(XP_UNIX) || (defined(XP_PC) && defined(WIN32))
     num_files = FILES_IN_DIR + 1;
 #else
     num_files = FILES_IN_DIR;
@@ -766,7 +733,7 @@ static PRInt32 PR_CALLBACK DirTest(void *arg)
 
     PR_CloseDir(fd_dir);
 
-#if defined(XP_UNIX) || (defined(XP_PC) && defined(WIN32)) || defined(XP_OS2)
+#if defined(XP_UNIX) || (defined(XP_PC) && defined(WIN32))
 
     /*
      * List all files, except hidden files
@@ -891,12 +858,12 @@ int main(int argc, char **argv)
 #ifdef WIN32
     PRUint32 len;
 #endif
-#if defined(XP_UNIX) || defined(XP_OS2)
+#if defined(XP_UNIX)
     int opt;
     extern char *optarg;
     extern int optind;
 #endif
-#if defined(XP_UNIX) || defined(XP_OS2)
+#if defined(XP_UNIX)
     while ((opt = getopt(argc, argv, "d")) != EOF) {
         switch(opt) {
             case 'd':

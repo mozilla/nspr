@@ -21,7 +21,7 @@ CSRCS =             \
 	tail.c		    \
 	$(NULL)
 
-ifeq (,$(filter-out WINNT OS2,$(OS_ARCH)))
+ifeq (,$(filter-out WINNT,$(OS_ARCH)))
 PROG_SUFFIX = .exe
 else
 PROG_SUFFIX =
@@ -45,10 +45,6 @@ ifeq ($(OS_ARCH), WINNT)
 LDOPTS = -NOLOGO -DEBUG -INCREMENTAL:NO
 LIBPR = $(dist_libdir)/libnspr$(NSPR_VERSION).$(LIB_SUFFIX)
 LIBPLC= $(dist_libdir)/libplc$(NSPR_VERSION).$(LIB_SUFFIX)
-endif
-
-ifeq ($(OS_ARCH),OS2)
-LDOPTS += -Zomf -Zlinker /PM:VIO
 endif
 
 ifneq ($(OS_ARCH), WINNT)
@@ -136,11 +132,7 @@ $(OBJDIR)/%$(PROG_SUFFIX): $(OBJDIR)/%.$(OBJ_SUFFIX)
 ifeq ($(OS_ARCH), WINNT)
 	link $(LDOPTS) $< $(LIBPR) $(LIBPLC) ws2_32.lib -out:$@
 else
-ifeq ($(OS_ARCH),OS2)
-	$(LINK) $(LDOPTS) $< $(LIBPR) $(LIBPLC) $(OS_LIBS) $(EXTRA_LIBS) -o $@
-else
 	$(CC) $(XCFLAGS) $< $(LDOPTS) $(LIBPR) $(LIBPLC) $(EXTRA_LIBS) -o $@
-endif
 endif
 endif
 

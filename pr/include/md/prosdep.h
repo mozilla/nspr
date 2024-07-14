@@ -22,9 +22,6 @@ PR_BEGIN_EXTERN_C
 #elif defined(WIN95) || defined(WINCE)
 #include "md/_win95.h"
 #include "md/_win32_errors.h"
-#elif defined(OS2)
-#include "md/_os2.h"
-#include "md/_os2_errors.h"
 #else
 #error unknown Windows platform
 #endif

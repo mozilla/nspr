@@ -13,7 +13,7 @@
  *************************************************************************
  */
 
-#if !defined(XP_UNIX) && !defined(XP_OS2)
+#if !defined(XP_UNIX)
 
 int main(void)
 {
@@ -25,31 +25,17 @@ int main(void)
 
 #include "nspr.h"
 
-#ifdef XP_OS2
-#define INCL_DOSQUEUES
-#define INCL_DOSERRORS
-#include <os2.h>
-#endif
-
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
 
 static void Test(void *arg)
 {
-#ifdef XP_OS2
-    HFILE pipefd[2];
-#else
     int pipefd[2];
-#endif
     int rv;
     char c = '\0';
 
-#ifdef XP_OS2
-    if (DosCreatePipe(&pipefd[0], &pipefd[1], 4096) != 0) {
-#else
     if (pipe(pipefd) == -1) {
-#endif
         fprintf(stderr, "cannot create pipe: %d\n", errno);
         exit(1);
     }

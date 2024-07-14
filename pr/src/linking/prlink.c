@@ -39,8 +39,7 @@
 /*
  * On these platforms, symbols have a leading '_'.
  */
-#if defined(XP_OS2) \
-    || ((defined(OPENBSD) || defined(NETBSD)) && !defined(__ELF__))
+#if ((defined(OPENBSD) || defined(NETBSD)) && !defined(__ELF__))
 #define NEED_LEADING_UNDERSCORE
 #endif
 
@@ -55,11 +54,7 @@ struct PRLibrary {
     const PRStaticLinkTable*    staticTable;
 
 #ifdef XP_PC
-#ifdef XP_OS2
-    HMODULE                     dlh;
-#else
     HINSTANCE                   dlh;
-#endif
 #endif
 
 #ifdef XP_UNIX
@@ -122,12 +117,8 @@ void _PR_InitLinker(void)
 #if defined(XP_PC)
     lm = PR_NEWZAP(PRLibrary);
     lm->name = strdup("Executable");
-#if defined(XP_OS2)
-    lm->dlh = NULLHANDLE;
-#else
     /* A module handle for the executable. */
     lm->dlh = GetModuleHandle(NULL);
-#endif /* ! XP_OS2 */
 
     lm->refCount    = 1;
     lm->staticTable = NULL;
@@ -357,8 +348,6 @@ pr_UnlockedFindLibrary(const char *name)
 #ifdef WIN32
         /* Windows DLL names are case insensitive... */
         if (strcmpi(np, cp) == 0)
-#elif defined(XP_OS2)
-        if (stricmp(np, cp) == 0)
 #else
         if (strcmp(np, cp)  == 0)
 #endif
@@ -479,25 +468,6 @@ pr_LoadLibraryByPathname(const char *name, PRIntn flags)
         goto unlock;
     }
     lm->staticTable = NULL;
-
-#ifdef XP_OS2  /* Why isn't all this stuff in MD code?! */
-    {
-        HMODULE h;
-        UCHAR pszError[_MAX_PATH];
-        ULONG ulRc = NO_ERROR;
-
-        ulRc = DosLoadModule(pszError, _MAX_PATH, (PSZ) name, &h);
-        if (ulRc != NO_ERROR) {
-            oserr = ulRc;
-            PR_DELETE(lm);
-            goto unlock;
-        }
-        lm->name = strdup(name);
-        lm->dlh  = h;
-        lm->next = pr_loadmap;
-        pr_loadmap = lm;
-    }
-#endif /* XP_OS2 */
 
 #ifdef WIN32
     {
@@ -738,9 +708,6 @@ static void*
 pr_FindSymbolInLib(PRLibrary *lm, const char *name)
 {
     void *f = NULL;
-#ifdef XP_OS2
-    int rc;
-#endif
 
     if (lm->staticTable != NULL) {
         const PRStaticLinkTable* tp;
@@ -756,20 +723,6 @@ pr_FindSymbolInLib(PRLibrary *lm, const char *name)
         PR_SetError(PR_FIND_SYMBOL_ERROR, 0);
         return (void*)NULL;
     }
-
-#ifdef XP_OS2
-    rc = DosQueryProcAddr(lm->dlh, 0, (PSZ) name, (PFN *) &f);
-#if defined(NEED_LEADING_UNDERSCORE)
-    /*
-     * Older plugins (not built using GCC) will have symbols that are not
-     * underscore prefixed.  We check for that here.
-     */
-    if (rc != NO_ERROR) {
-        name++;
-        DosQueryProcAddr(lm->dlh, 0, (PSZ) name, (PFN *) &f);
-    }
-#endif
-#endif  /* XP_OS2 */
 
 #ifdef WIN32
     f = GetProcAddress(lm->dlh, name);
@@ -1110,27 +1063,6 @@ PR_GetLibraryFilePathname(const char *name, PRFuncPtr addr)
     if (result != NULL) {
         WideCharToMultiByte(CP_ACP, 0, module_name, -1,
                             result, len, NULL, NULL);
-    }
-    return result;
-#elif defined(XP_OS2)
-    HMODULE module = NULL;
-    char module_name[_MAX_PATH];
-    char *result;
-    APIRET ulrc = DosQueryModFromEIP(&module, NULL, 0, NULL, NULL, (ULONG) addr);
-    if ((NO_ERROR != ulrc) || (NULL == module) ) {
-        PR_SetError(PR_LIBRARY_NOT_LOADED_ERROR, _MD_ERRNO());
-        DLLErrorInternal(_MD_ERRNO());
-        return NULL;
-    }
-    ulrc = DosQueryModuleName(module, sizeof module_name, module_name);
-    if (NO_ERROR != ulrc) {
-        /* should not happen */
-        _PR_MD_MAP_DEFAULT_ERROR(_MD_ERRNO());
-        return NULL;
-    }
-    result = PR_Malloc(strlen(module_name)+1);
-    if (result != NULL) {
-        strcpy(result, module_name);
     }
     return result;
 #else

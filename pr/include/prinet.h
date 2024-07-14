@@ -32,13 +32,10 @@
 #ifndef prinet_h__
 #define prinet_h__
 
-#if defined(XP_UNIX) || defined(XP_OS2)
+#if defined(XP_UNIX)
 #include <sys/types.h>
 #include <sys/socket.h>     /* AF_INET */
 #include <netinet/in.h>         /* INADDR_ANY, ..., ntohl(), ... */
-#ifdef XP_OS2
-#include <sys/ioctl.h>
-#endif
 #ifdef XP_UNIX
 #ifdef AIX
 /*
@@ -62,7 +59,7 @@ struct sockaddr_dl;
  * OS/2 hack.  For some reason INADDR_LOOPBACK is not defined in the
  * socket headers.
  */
-#if defined(OS2) && !defined(INADDR_LOOPBACK)
+#if !defined(INADDR_LOOPBACK)
 #define INADDR_LOOPBACK 0x7f000001
 #endif
 

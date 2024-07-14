@@ -8,16 +8,6 @@
 #include "prprf.h"
 #include "prlong.h"
 
-#if defined(OS2)
-#define INCL_DOS
-#define INCL_DOSMISC
-#include <os2.h>
-/* define the required constant if it is not already defined in the headers */
-#ifndef QSV_NUMPROCESSORS
-#define QSV_NUMPROCESSORS 26
-#endif
-#endif
-
 /* BSD-derived systems use sysctl() to get the number of processors */
 #if defined(BSDI) || defined(FREEBSD) || defined(NETBSD) \
     || defined(OPENBSD) || defined(DRAGONFLY) || defined(DARWIN)
@@ -132,24 +122,6 @@ PR_IMPLEMENT(PRStatus) PR_GetSystemInfo(PRSysInfo cmd, char *buf, PRUint32 bufle
                 return PR_FAILURE;
             }
 #endif
-#if defined(XP_OS2)
-            {
-                ULONG os2ver[2] = {0};
-                DosQuerySysInfo(QSV_VERSION_MINOR, QSV_VERSION_REVISION,
-                                &os2ver, sizeof(os2ver));
-                /* Formatting for normal usage (2.11, 3.0, 4.0, 4.5); officially,
-                   Warp 4 is version 2.40.00, WSeB 2.45.00 */
-                if (os2ver[0] < 30)
-                    (void)PR_snprintf(buf, buflen, "%s%lu",
-                                      "2.", os2ver[0]);
-                else if (os2ver[0] < 45)
-                    (void)PR_snprintf(buf, buflen, "%lu%s%lu",
-                                      os2ver[0]/10, ".", os2ver[1]);
-                else
-                    (void)PR_snprintf(buf, buflen, "%.1f",
-                                      os2ver[0]/10.0);
-            }
-#endif /* OS2 */
             break;
 
         case PR_SI_RELEASE_BUILD:
@@ -198,8 +170,6 @@ PR_IMPLEMENT(PRInt32) PR_GetNumberOfProcessors( void )
 
     GetSystemInfo( &info );
     numCpus = info.dwNumberOfProcessors;
-#elif defined(OS2)
-    DosQuerySysInfo( QSV_NUMPROCESSORS, QSV_NUMPROCESSORS, &numCpus, sizeof(numCpus));
 #elif defined(_PR_HAVE_SYSCTL)
     int mib[2];
     int rc;
@@ -341,15 +311,6 @@ PR_IMPLEMENT(PRUint64) PR_GetPhysicalMemorySize(void)
     if (GlobalMemoryStatusEx(&memStat)) {
         bytes = memStat.ullTotalPhys;
     }
-
-#elif defined(OS2)
-
-    ULONG ulPhysMem;
-    DosQuerySysInfo(QSV_TOTPHYSMEM,
-                    QSV_TOTPHYSMEM,
-                    &ulPhysMem,
-                    sizeof(ulPhysMem));
-    bytes = ulPhysMem;
 
 #elif defined(AIX)
 

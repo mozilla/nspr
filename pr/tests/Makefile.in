@@ -191,7 +191,7 @@ CSRCS +=            \
 	$(NULL)
 endif
 
-ifeq (,$(filter-out WINCE WINNT OS2,$(OS_ARCH)))
+ifeq (,$(filter-out WINCE WINNT,$(OS_ARCH)))
 PROG_SUFFIX = .exe
 DLL_SUFFIX = .dll
 else
@@ -216,11 +216,6 @@ else
     LDOPTS += -PROFILE -MAP
   endif # profile
 endif # NS_USE_GCC
-endif
-
-ifeq ($(OS_ARCH),OS2)
-EXTRA_LIBS = $(OS_LIBS)
-LDOPTS = -Zomf -Zlinker /PM:VIO -Zlinker /ST:0x64000
 endif
 
 ifneq ($(OS_ARCH), WINNT)
@@ -429,7 +424,7 @@ PROGRAMS = $(notdir $(PROGS))
 ifdef NSPR_TEST_LOGFILE
 LOGFILE = $(NSPR_TEST_LOGFILE)
 else
-ifeq (,$(filter-out WINNT OS2,$(OS_ARCH)))
+ifeq (,$(filter-out WINNT,$(OS_ARCH)))
 LOGFILE = nul
 else
 LOGFILE = /dev/null

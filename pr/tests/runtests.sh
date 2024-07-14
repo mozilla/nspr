@@ -57,7 +57,6 @@ fi
 #prselect	- obsolete; PR_Select is obsolete
 #select2	- obsolete; PR_Select is obsolete
 #sem		- obsolete; PRSemaphore is obsolete
-#stat		- for OS2?
 #suspend	- private interfaces PR_SuspendAll, PR_ResumeAll, etc..
 #thruput	- needs to be run manually as client/server
 #time		- used to measure time with native calls and nspr calls

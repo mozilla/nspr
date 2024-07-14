@@ -42,11 +42,6 @@
 #include "md/_pth.h"
 #elif defined(SOLARIS)
 #include <thread.h>
-#elif defined(OS2)
-#define INCL_DOS
-#define INCL_ERRORS
-#include <os2.h>
-#include <process.h>
 #endif
 
 #define DEFAULT_COUNT 1000
@@ -119,9 +114,6 @@ int main(int argc, char **argv)
     DWORD rv;
     unsigned threadID;
     HANDLE hThread;
-#elif defined(OS2)
-    int rv;
-    TID threadID;
 #endif
 
     /* The command line argument: -d is used to determine if the test is being run
@@ -252,23 +244,6 @@ int main(int argc, char **argv)
         PR_ASSERT(rv != WAIT_FAILED);
     }
     else if (rv == WAIT_FAILED) {
-        failed_already=1;
-        goto exit_now;
-    }
-
-#elif defined(OS2)
-
-    threadID = (TID) _beginthread((void *)threadStartFunc, NULL,
-                                  32768, NULL);
-    if (threadID == -1) {
-        fprintf(stderr, "thread creation failed: error code %d\n", errno);
-        failed_already=1;
-        goto exit_now;
-    }
-    rv = DosWaitThread(&threadID, DCWW_WAIT);
-    if (debug_mode) {
-        PR_ASSERT(rv == NO_ERROR);
-    } else if (rv != NO_ERROR) {
         failed_already=1;
         goto exit_now;
     }

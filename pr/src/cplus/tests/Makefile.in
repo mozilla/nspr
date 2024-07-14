@@ -27,7 +27,7 @@ CXXSRCS =           \
 
 OBJS = $(addprefix $(OBJDIR)/,$(CXXSRCS:.cpp=.$(OBJ_SUFFIX)))
 
-ifeq (,$(filter-out WINNT OS2,$(OS_ARCH)))
+ifeq (,$(filter-out WINNT,$(OS_ARCH)))
 PROG_SUFFIX = .exe
 else
 PROG_SUFFIX =
@@ -66,10 +66,6 @@ ifeq ($(OS_ARCH), WINNT)
   LDOPTS = -NOLOGO -DEBUG -INCREMENTAL:NO
   LIBPR = $(dist_libdir)/libnspr$(MOD_MAJOR_VERSION).$(LIB_SUFFIX)
   LIBPL = $(dist_libdir)/libplc$(MOD_MAJOR_VERSION).$(LIB_SUFFIX)
-endif
-
-ifeq ($(OS_ARCH),OS2)
-LDOPTS += -Zomf -Zlinker /PM:VIO -lstdcpp
 endif
 
 ifneq ($(OS_ARCH), WINNT)
@@ -160,11 +156,7 @@ $(OBJDIR)/%$(PROG_SUFFIX): $(OBJDIR)/%.$(OBJ_SUFFIX)
 ifeq ($(OS_ARCH), WINNT)
 	link $(LDOPTS) $< $(LIBPR) $(LIBPL) ws2_32.lib -out:$@
 else
-ifeq ($(OS_ARCH),OS2)
-	$(LINK) $(LDOPTS) $< $(LIBGC) $(LIBPLC) $(LIBPR) $(OS_LIBS) $(EXTRA_LIBS) -o $@
-else
 	$(CCC) $(XCFLAGS) $< $(LDOPTS) $(LIBPR) $(LIBPL) $(EXTRA_LIBS) -o $@
-endif
 endif
 endif
 

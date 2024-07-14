@@ -51,11 +51,7 @@
 
 #define SERVER_MAX_BIND_COUNT        100
 
-#if defined(XP_OS2)
-#define TIMEOUTSECS 10
-#else
 #define TIMEOUTSECS 2
-#endif
 PRIntervalTime timeoutTime;
 
 static PRInt32 count = 1;

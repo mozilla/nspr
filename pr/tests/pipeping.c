@@ -26,11 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef XP_OS2
-static char *child_argv[] = { "pipepong.exe", NULL };
-#else
 static char *child_argv[] = { "pipepong", NULL };
-#endif
 
 #define NUM_ITERATIONS 10
 
