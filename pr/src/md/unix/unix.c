@@ -25,11 +25,6 @@
 #include <android/api-level.h>
 #endif
 
-/* To get FIONREAD */
-#if defined(UNIXWARE)
-#include <sys/filio.h>
-#endif
-
 #if defined(NTO)
 #include <sys/statvfs.h>
 #endif
@@ -43,12 +38,11 @@
 #define _PRSockLen_t socklen_t
 #elif defined(HPUX) || defined(SOLARIS) \
     || defined(AIX4_1) || defined(LINUX) \
-    || defined(BSDI) || defined(SCO) \
     || defined(DARWIN) \
     || defined(QNX)
 #define _PRSockLen_t int
 #elif (defined(AIX) && !defined(AIX4_1)) || defined(FREEBSD) \
-    || defined(NETBSD) || defined(OPENBSD) || defined(UNIXWARE) \
+    || defined(NETBSD) || defined(OPENBSD)
     || defined(NTO) || defined(RISCOS)
 #define _PRSockLen_t size_t
 #else
@@ -176,18 +170,8 @@ char * _MD_read_dir(_MDDir *d, PRIntn flags)
 PRInt32 _MD_delete(const char *name)
 {
     PRInt32 rv, err;
-#ifdef UNIXWARE
-    sigset_t set, oset;
-#endif
 
-#ifdef UNIXWARE
-    sigfillset(&set);
-    sigprocmask(SIG_SETMASK, &set, &oset);
-#endif
     rv = unlink(name);
-#ifdef UNIXWARE
-    sigprocmask(SIG_SETMASK, &oset, NULL);
-#endif
     if (rv == -1) {
         err = _MD_ERRNO();
         _PR_MD_MAP_UNLINK_ERROR(err);
@@ -783,11 +767,11 @@ PRInt32 _MD_recv(PRFileDesc *fd, void *buf, PRInt32 amount,
     PRThread *me = _PR_MD_CURRENT_THREAD();
 
     /*
-     * Many OS's (Solaris, Unixware) have a broken recv which won't read
+     * Many OS's (ex: Solaris) have a broken recv which won't read
      * from socketpairs.  As long as we don't use flags on socketpairs, this
      * is a decent fix. - mikep
      */
-#if defined(UNIXWARE) || defined(SOLARIS)
+#if defined(SOLARIS)
     while ((rv = read(osfd,buf,amount)) == -1) {
 #else
     while ((rv = recv(osfd,buf,amount,flags)) == -1) {
@@ -2027,23 +2011,6 @@ static void ClockInterruptHandler()
     _PR_MD_SET_INTSOFF(0);
 }
 
-/*
- * On HP-UX 9, we have to use the sigvector() interface to restart
- * interrupted system calls, because sigaction() does not have the
- * SA_RESTART flag.
- */
-
-#ifdef HPUX9
-static void HPUX9_ClockInterruptHandler(
-    int sig,
-    int code,
-    struct sigcontext *scp)
-{
-    ClockInterruptHandler();
-    scp->sc_syscall_action = SIG_RESTART;
-}
-#endif /* HPUX9 */
-
 /* # of milliseconds per clock tick that we will use */
 #define MSEC_PER_TICK    50
 
@@ -2077,21 +2044,12 @@ void _MD_EnableClockInterrupts()
 {
     struct itimerval itval;
     extern PRUintn _pr_numCPU;
-#ifdef HPUX9
-    struct sigvec vec;
-
-    vec.sv_handler = (void (*)()) HPUX9_ClockInterruptHandler;
-    vec.sv_mask = 0;
-    vec.sv_flags = 0;
-    sigvector(SIGALRM, &vec, 0);
-#else
     struct sigaction vtact;
 
     vtact.sa_handler = (void (*)()) ClockInterruptHandler;
     sigemptyset(&vtact.sa_mask);
     vtact.sa_flags = SA_RESTART;
     sigaction(SIGALRM, &vtact, 0);
-#endif /* HPUX9 */
 
     PR_ASSERT(_pr_numCPU == 1);
     itval.it_interval.tv_sec = 0;
@@ -3269,19 +3227,6 @@ int _MD_unix_get_nonblocking_connect_error(int osfd)
     } else {
         return ECONNREFUSED;
     }
-#elif defined(UNIXWARE)
-    /*
-     * getsockopt() fails with EPIPE, so use getmsg() instead.
-     */
-
-    int rv;
-    int flags = 0;
-    rv = getmsg(osfd, NULL, NULL, &flags);
-    PR_ASSERT(-1 == rv || 0 == rv);
-    if (-1 == rv && errno != EAGAIN && errno != EWOULDBLOCK) {
-        return errno;
-    }
-    return 0; /* no error */
 #else
     int err;
     _PRSockLen_t optlen = sizeof(err);

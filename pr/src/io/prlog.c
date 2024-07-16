@@ -136,7 +136,7 @@ static PRBool appendToLog = PR_FALSE;
 
 /*
  * strcasecmp is defined in /usr/ucblib/libucb.a on some platforms
- * such as NCR and Unixware.  Linking with both libc and libucb
+ * such as NCR.  Linking with both libc and libucb
  * may cause some problem, so I just provide our own implementation
  * of strcasecmp here.
  */

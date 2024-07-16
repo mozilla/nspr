@@ -63,9 +63,7 @@ void PR_SetXtHackOkayToReleaseXLockFn(int (*fn)(void))
  *-----------------------------------------------------------------------
  */
 
-#if defined(HPUX9)
-int select(size_t width, int *rl, int *wl, int *el, const struct timeval *tv)
-#elif defined(AIX_RENAME_SELECT)
+#if defined(AIX_RENAME_SELECT)
 int wrap_select(unsigned long width, void *rl, void *wl, void *el,
                 struct timeval *tv)
 #elif defined(_PR_SELECT_CONST_TIMEVAL)
@@ -80,7 +78,7 @@ int select(int width, fd_set *rd, fd_set *wr, fd_set *ex, struct timeval *tv)
     PRInt32 pdcnt;
     PRIntervalTime timeout;
     int retVal;
-#if defined(HPUX9) || defined(AIX_RENAME_SELECT)
+#if defined(AIX_RENAME_SELECT)
     fd_set *rd = (fd_set*) rl;
     fd_set *wr = (fd_set*) wl;
     fd_set *ex = (fd_set*) el;
@@ -92,7 +90,7 @@ int select(int width, fd_set *rd, fd_set *wr, fd_set *ex, struct timeval *tv)
      * select() with no fear of blocking.
      */
     if (tv != NULL && tv->tv_sec == 0 && tv->tv_usec == 0) {
-#if defined(HPUX9) || defined(AIX_RENAME_SELECT)
+#if defined(AIX_RENAME_SELECT)
         return _MD_SELECT(width, rl, wl, el, tv);
 #else
         return _MD_SELECT(width, rd, wr, ex, tv);
@@ -302,10 +300,8 @@ int select(int width, fd_set *rd, fd_set *wr, fd_set *ex, struct timeval *tv)
 int wrap_poll(void *listptr, unsigned long nfds, long timeout)
 #elif (defined(AIX) && !defined(AIX_RENAME_SELECT))
 int poll(void *listptr, unsigned long nfds, long timeout)
-#elif defined(HPUX) && !defined(HPUX9)
+#elif defined(HPUX)
 int poll(struct pollfd filedes[], unsigned int nfds, int timeout)
-#elif defined(HPUX9)
-int poll(struct pollfd filedes[], int nfds, int timeout)
 #elif defined(NETBSD)
 int poll(struct pollfd *filedes, nfds_t nfds, int timeout)
 #elif defined(OPENBSD)

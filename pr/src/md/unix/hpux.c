@@ -74,23 +74,6 @@ void _MD_EarlyInit(void)
      * In an email to servereng dated 2 Jan 1997, Mike Patnode (mikep)
      * suggests that this only needs to be done for HP-UX 9.
      */
-#ifdef HPUX9
-#define PIDOOMA_STACK_SIZE 524288
-#define BACKTRACE_SIZE 8192
-    {
-        jmp_buf jb;
-        char *newstack;
-        char *oldstack;
-
-        if(!setjmp(jb)) {
-            newstack = (char *) PR_MALLOC(PIDOOMA_STACK_SIZE);
-            oldstack = (char *) (*(((int *) jb) + 1) - BACKTRACE_SIZE);
-            memcpy(newstack, oldstack, BACKTRACE_SIZE);
-            *(((int *) jb) + 1) = (int) (newstack + BACKTRACE_SIZE);
-            longjmp(jb, 1);
-        }
-    }
-#endif  /* HPUX9 */
 #endif  /* !_PR_PTHREADS */
 }
 

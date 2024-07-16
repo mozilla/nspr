@@ -49,11 +49,11 @@ _MD_WAKEUP_WAITER(PRThread *thread)
     return PR_SUCCESS;
 }
 
-/* These functions should not be called for Unixware */
+/* These functions should not be called for qnx */
 void
 _MD_YIELD(void)
 {
-    PR_NOT_REACHED("_MD_YIELD should not be called for Unixware.");
+    PR_NOT_REACHED("_MD_YIELD should not be called for qnx.");
 }
 
 PRStatus
@@ -65,6 +65,6 @@ _MD_CREATE_THREAD(
     PRThreadState state,
     PRUint32 stackSize)
 {
-    PR_NOT_REACHED("_MD_CREATE_THREAD should not be called for Unixware.");
+    PR_NOT_REACHED("_MD_CREATE_THREAD should not be called for qnx.");
     return PR_FAILURE;
 }

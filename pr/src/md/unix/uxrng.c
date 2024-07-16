@@ -104,7 +104,7 @@ GetHighResClock(void *buf, size_t maxbytes)
     return(GetDevURandom( buf, maxbytes ));
 }
 
-#elif defined(SCO) || defined(UNIXWARE) || defined(BSDI) || defined(NTO) \
+#elif defined(NTO) \
     || defined(QNX) || defined(DARWIN) || defined(RISCOS)
 #include <sys/times.h>
 

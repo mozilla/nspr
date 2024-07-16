@@ -9,7 +9,7 @@
 #include "prlong.h"
 
 /* BSD-derived systems use sysctl() to get the number of processors */
-#if defined(BSDI) || defined(FREEBSD) || defined(NETBSD) \
+#if defined(FREEBSD) || defined(NETBSD) \
     || defined(OPENBSD) || defined(DRAGONFLY) || defined(DARWIN)
 #define _PR_HAVE_SYSCTL
 #include <sys/param.h>

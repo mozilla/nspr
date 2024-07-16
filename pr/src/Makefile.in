@@ -132,10 +132,6 @@ endif
 endif
 endif
 
-ifeq ($(OS_ARCH),UNIXWARE)
-OS_LIBS		= -lsocket -lc
-endif
-
 ifeq ($(OS_ARCH),WINNT)
 ifdef NS_USE_GCC
 OS_LIBS		= -ladvapi32 -lws2_32 -lmswsock -lwinmm

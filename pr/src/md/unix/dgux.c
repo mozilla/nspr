@@ -8,8 +8,6 @@
 /*
  * using only NSPR threads here
  *
- *  Copied from the UnixWare implementation.  Should be kept in sync
- *  with ../../../include/md/_dgux.h.
  */
 
 #include <setjmp.h>

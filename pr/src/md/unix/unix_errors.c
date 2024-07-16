@@ -528,16 +528,6 @@ void _MD_unix_map_connect_error(int err)
     PRErrorCode prError;
 
     switch (err) {
-#if defined(UNIXWARE)
-        /*
-         * On some platforms, if we connect to a port on the local host
-         * (the loopback address) that no process is listening on, we get
-         * EIO instead of ECONNREFUSED.
-         */
-        case EIO:
-            prError = PR_CONNECT_REFUSED_ERROR;
-            break;
-#endif
         case ENXIO:
             prError = PR_IO_ERROR;
             break;

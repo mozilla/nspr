@@ -35,23 +35,6 @@ error - LINUX is not defined
 #endif
 #endif
 
-#if defined(bsdi)
-#ifndef BSDI
-error - BSDI is not defined
-#endif
-#endif
-
-#if defined(M_UNIX)
-#ifndef SCO
-error - SCO is not defined
-#endif
-#endif
-#if !defined(M_UNIX) && defined(_USLC_)
-#ifndef UNIXWARE
-error - UNIXWARE is not defined
-#endif
-#endif
-
 #if defined(__APPLE__)
 #ifndef DARWIN
 error - DARWIN is not defined
@@ -69,7 +52,7 @@ error - DARWIN is not defined
 #define INT64   long
 #endif
 #else
-#if defined(HPUX) || defined(SCO) || defined(UNIXWARE)
+#if defined(HPUX)
 #define INT64   long
 #else
 #define INT64   long long

@@ -76,7 +76,7 @@ void _PR_InitThreads(PRThreadType type, PRThreadPriority priority,
     stack->stackTop = (char*) ((((PRWord)&type) >> _pr_pageShift)
                                << _pr_pageShift);
 #else
-#if defined(SOLARIS) || defined (UNIXWARE) && defined (USR_SVR4_THREADS)
+#if defined(SOLARIS)
     stack->stackTop = (char*) &thread;
 #else
     stack->stackTop = (char*) ((((PRWord)&type + _pr_pageSize - 1)

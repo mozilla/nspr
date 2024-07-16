@@ -25,7 +25,7 @@ static void GetPageSize(void)
 
     /* Get page size */
 #ifdef XP_UNIX
-#if defined BSDI || defined AIX \
+#if defined AIX \
         || defined LINUX || defined __GNU__ || defined __GLIBC__ \
         || defined FREEBSD || defined NETBSD || defined OPENBSD \
         || defined DARWIN

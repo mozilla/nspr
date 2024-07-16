@@ -1413,7 +1413,6 @@ static void suspend_signal_handler(PRIntn sig)
     while (me->suspend & PT_THREAD_SUSPENDED)
     {
 #if !defined(FREEBSD) && !defined(NETBSD) && !defined(OPENBSD) \
-    && !defined(BSDI) && !defined(UNIXWARE) \
     && !defined(DARWIN) && !defined(RISCOS)
         PRIntn rv;
         sigwait(&sigwait_set, &rv);

@@ -1875,8 +1875,7 @@ extern void _PR_DestroyZones(void);
         && !defined(_PR_PTHREADS) && !defined(_PR_GLOBAL_THREADS_ONLY) \
         && !defined(PURIFY) \
         && !defined(DARWIN) \
-        && !defined(QNX) \
-        && !(defined (UNIXWARE) && defined (USE_SVR4_THREADS))
+        && !defined(QNX)
 #define _PR_OVERRIDE_MALLOC
 #endif
 

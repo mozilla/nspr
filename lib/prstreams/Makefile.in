@@ -61,10 +61,6 @@ ifeq ($(OS_ARCH),BeOS)
     OS_LIBS = -lstdc++.r4
 endif
 
-ifeq ($(OS_ARCH), UNIXWARE)
-    OS_LIBS += -lC
-endif
-
 EXTRA_LIBS = $(LIBNSPR)
 
 # On SCOOS, we can't link with extra libraries when

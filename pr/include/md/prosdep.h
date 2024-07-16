@@ -40,9 +40,6 @@ PR_BEGIN_EXTERN_C
 #elif defined(OPENBSD)
 #include "md/_openbsd.h"
 
-#elif defined(BSDI)
-#include "md/_bsdi.h"
-
 #elif defined(HPUX)
 #include "md/_hpux.h"
 
@@ -54,12 +51,6 @@ PR_BEGIN_EXTERN_C
 
 #elif defined(SOLARIS)
 #include "md/_solaris.h"
-
-#elif defined(SCO)
-#include "md/_scoos.h"
-
-#elif defined(UNIXWARE)
-#include "md/_unixware.h"
 
 #elif defined(QNX)
 #include "md/_qnx.h"

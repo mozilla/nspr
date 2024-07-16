@@ -58,7 +58,7 @@ PRLock *_pr_dnsLock = NULL;
  * an int, and glibc's flavor takes five arguments.
  */
 
-#if defined(SOLARIS) || (defined(BSDI) && defined(_REENTRANT)) \
+#if defined(SOLARIS)
     || (defined(LINUX) && defined(_REENTRANT) \
         && defined(__GLIBC__) && __GLIBC__ < 2)
 #define _PR_HAVE_GETPROTO_R

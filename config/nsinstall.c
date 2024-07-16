@@ -43,12 +43,6 @@
 #include <getopt.h>
 #endif
 
-#if defined(SCO) || defined(UNIXWARE)
-#if !defined(S_ISLNK) && defined(S_IFLNK)
-#define S_ISLNK(a)  (((a) & S_IFMT) == S_IFLNK)
-#endif
-#endif
-
 #ifdef QNX
 #define d_ino d_stat.st_ino
 #endif
@@ -412,21 +406,6 @@ getcomponent(char *path, char *name)
     }
     return path;
 }
-
-#ifdef UNIXWARE_READDIR_BUFFER_TOO_SMALL
-/* Sigh.  The static buffer in Unixware's readdir is too small. */
-struct dirent * readdir(DIR *d)
-{
-    static struct dirent *buf = NULL;
-#define MAX_PATH_LEN 1024
-
-
-    if(buf == NULL)
-        buf = (struct dirent *) malloc(sizeof(struct dirent) + MAX_PATH_LEN)
-              ;
-    return(readdir_r(d, buf));
-}
-#endif
 
 char *
 ino2name(ino_t ino, char *dir)

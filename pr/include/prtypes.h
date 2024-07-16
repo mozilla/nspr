@@ -223,8 +223,6 @@ typedef unsigned char PRUint8;
 */
 #if (defined(HPUX) && defined(__cplusplus) /* reason 1*/ \
         && !defined(__GNUC__) && __cplusplus < 199707L) \
-    || (defined(SCO) && defined(__cplusplus) /* reason 1 */ \
-        && !defined(__GNUC__) && __cplusplus == 1L) \
     || (defined(__sun) && defined(__cplusplus)) /* reason 2 */
 typedef char PRInt8;
 #else

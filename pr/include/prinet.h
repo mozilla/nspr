@@ -51,7 +51,7 @@ struct sockaddr_dl;
 #endif /* XP_UNIX */
 #include <netdb.h>
 
-#if defined(BSDI) || defined(QNX)
+#if defined(QNX)
 #include <rpc/types.h> /* the only place that defines INADDR_LOOPBACK */
 #endif
 
@@ -61,14 +61,6 @@ struct sockaddr_dl;
  */
 #if !defined(INADDR_LOOPBACK)
 #define INADDR_LOOPBACK 0x7f000001
-#endif
-
-/*
- * Prototypes of ntohl() etc. are declared in <machine/endian.h>
- * on these platforms.
- */
-#if defined(BSDI)
-#include <machine/endian.h>
 #endif
 
 /* On Android, ntohl() etc. are declared in <sys/endian.h>. */

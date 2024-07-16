@@ -109,10 +109,6 @@ EXTRA_LIBS = -lsocket
 export LD_RUN_PATH = $(PWD)/$(dist_libdir)
 endif
 
-ifeq ($(OS_ARCH), UNIXWARE)
-export LD_RUN_PATH = $(PWD)/$(dist_libdir)
-endif
-
 #####################################################
 #
 # The rules
