@@ -15,12 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef XP_OS2
-#include <io.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#endif
 
 #define DEFAULT_COUNT 100000
 PRInt32 count;

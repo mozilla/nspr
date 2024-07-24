@@ -1,5 +1,5 @@
 #!/bin/sh
-# 
+#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -63,7 +63,6 @@ fi
 #tmoacc		- should be run with tmocon
 #tmocon		- should be run with tmoacc
 #op_noacc	- limited use
-#yield		- limited use for PR_Yield
 
 #
 # Tests not run (but should)
@@ -71,10 +70,9 @@ fi
 
 #forktest (failed on IRIX)
 #multiwait - fails on Linux 64bit since NSPR v 4.4 from 2004.
-#nbconn - fails on some platforms 
+#nbconn - fails on some platforms
 #poll_er - fails on some platforms? limited use?
 #prpoll -  the bad-FD test needs to be moved to a different test
-#sleep	-  specific to OS/2
 #
 # all of the following were disabled in 2019 when reenabling CI tests,
 # because they failed on at least one of the platforms:
@@ -188,6 +186,7 @@ sigpipe
 sockping
 sprintf
 stack
+stat
 stdio
 str2addr
 strod
@@ -273,4 +272,3 @@ fi
 
 printf "END\t\t\t`date`\n"
 exit $rval
-
