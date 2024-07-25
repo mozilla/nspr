@@ -75,10 +75,39 @@ char testdir[TMPDIR_LEN];
 static PRInt32 PR_CALLBACK DirTest(void* argunused);
 PRInt32 dirtest_failed = 0;
 
-PRThread* create_new_thread(PRThreadType type, void (*start)(void* arg),
-                            void* arg, PRThreadPriority priority,
-                            PRThreadScope scope, PRThreadState state,
-                            PRUint32 stackSize, PRInt32 index) {
+#if defined(_PR_PTHREADS)
+typedef void* (*nativeStartType)(void*);
+#elif defined(WIN32)
+typedef unsigned(__stdcall* nativeStartType)(void*);
+#else
+typedef void (*nativeStartType)(void*);
+#endif
+
+#if defined(_PR_PTHREADS)
+static void* PR_CALLBACK DirTestWrapper(void* argunused) {
+  (void)DirTest(argunused);
+  return NULL;
+}
+#elif defined(WIN32)
+static unsigned __stdcall DirTestWrapper(void* argunused) {
+  (void)DirTest(argunused);
+  return 0;
+}
+#else
+static void PR_CALLBACK DirTestWrapper(void* argunused) {
+  (void)DirTest(argunused);
+}
+#endif
+
+static void PR_CALLBACK DirTestVoid(void* argunused) {
+  (void)DirTest(argunused);
+}
+
+PRThread* create_new_thread(PRThreadType type, nativeStartType nativeStart,
+                            void (*prStart)(void*), void* arg,
+                            PRThreadPriority priority, PRThreadScope scope,
+                            PRThreadState state, PRUint32 stackSize,
+                            PRInt32 index) {
   PRInt32 native_thread = 0;
 
   PR_ASSERT(state == PR_UNJOINABLE_THREAD);
@@ -105,7 +134,7 @@ PRThread* create_new_thread(PRThreadType type, void (*start)(void* arg),
   if (native_thread) {
 #  if defined(_PR_PTHREADS)
     pthread_t tid;
-    if (!pthread_create(&tid, NULL, start, arg)) {
+    if (!pthread_create(&tid, NULL, nativeStart, arg)) {
       return ((PRThread*)tid);
     } else {
       return (NULL);
@@ -114,17 +143,17 @@ PRThread* create_new_thread(PRThreadType type, void (*start)(void* arg),
     HANDLE thandle;
     unsigned tid;
 
-    thandle = (HANDLE)_beginthreadex(NULL, stackSize,
-                                     (unsigned(__stdcall*)(void*))start, arg,
+    thandle = (HANDLE)_beginthreadex(NULL, stackSize, nativeStart, arg,
                                      STACK_SIZE_PARAM_IS_A_RESERVATION, &tid);
     return ((PRThread*)thandle);
 #  endif
   } else {
     return (
-        PR_CreateThread(type, start, arg, priority, scope, state, stackSize));
+        PR_CreateThread(type, prStart, arg, priority, scope, state, stackSize));
   }
 #else
-  return (PR_CreateThread(type, start, arg, priority, scope, state, stackSize));
+  return (
+      PR_CreateThread(type, prStart, arg, priority, scope, state, stackSize));
 #endif
 }
 
@@ -163,6 +192,22 @@ static void PR_CALLBACK File_Write(void* arg) {
   PR_ExitMonitor(mon);
 }
 
+#if defined(_PR_PTHREADS)
+static void* PR_CALLBACK File_Write_Wrapper(void* argunused) {
+  (void)File_Write(argunused);
+  return NULL;
+}
+#elif defined(WIN32)
+static unsigned __stdcall File_Write_Wrapper(void* argunused) {
+  (void)File_Write(argunused);
+  return 0;
+}
+#else
+static void PR_CALLBACK File_Write_Wrapper(void* argunused) {
+  (void)File_Write(argunused);
+}
+#endif
+
 static void PR_CALLBACK File_Read(void* arg) {
   PRFileDesc* fd_file;
   File_Rdwr_Param* fp = (File_Rdwr_Param*)arg;
@@ -197,6 +242,22 @@ static void PR_CALLBACK File_Read(void* arg) {
   PR_Notify(mon);
   PR_ExitMonitor(mon);
 }
+
+#if defined(_PR_PTHREADS)
+static void* PR_CALLBACK File_Read_Wrapper(void* argunused) {
+  (void)File_Read(argunused);
+  return NULL;
+}
+#elif defined(WIN32)
+static unsigned __stdcall File_Read_Wrapper(void* argunused) {
+  (void)File_Read(argunused);
+  return 0;
+}
+#else
+static void PR_CALLBACK File_Read_Wrapper(void* argunused) {
+  (void)File_Read(argunused);
+}
+#endif
 
 static PRInt32 Misc_File_Tests(char* pathname) {
   PRFileDesc* fd_file;
@@ -278,8 +339,8 @@ static PRInt32 Misc_File_Tests(char* pathname) {
     printf(
         "testfile PR_GetFileInfo returned incorrect status-change time: %s\n",
         pathname);
-    printf("ft = %lld, ft1 = %lld\n", file_info.creationTime,
-           file_info1.creationTime);
+    printf("ft = %lld, ft1 = %lld\n", (long long)file_info.creationTime,
+           (long long)file_info1.creationTime);
     rv = -1;
     goto cleanup;
   }
@@ -304,8 +365,8 @@ static PRInt32 Misc_File_Tests(char* pathname) {
   if (LL_CMP(file_info.modifyTime, <, file_info1.modifyTime)) {
     printf("testfile PR_GetFileInfo returned incorrect modify time: %s\n",
            pathname);
-    printf("ft = %lld, ft1 = %lld\n", file_info.modifyTime,
-           file_info1.modifyTime);
+    printf("ft = %lld, ft1 = %lld\n", (long long)file_info.modifyTime,
+           (long long)file_info1.modifyTime);
     rv = -1;
     goto cleanup;
   }
@@ -367,7 +428,6 @@ cleanup:
 static PRInt32 PR_CALLBACK FileTest(void) {
   PRDir* fd_dir;
   int i, offset, len, rv = 0;
-  PRThread* t;
   PRThreadScope scope = PR_GLOBAL_THREAD;
   File_Rdwr_Param* fparamp;
 
@@ -423,9 +483,9 @@ static PRInt32 PR_CALLBACK FileTest(void) {
     fparamp->len = len;
     memset(fparamp->buf, i, len);
 
-    t = create_new_thread(PR_USER_THREAD, File_Write, (void*)fparamp,
-                          PR_PRIORITY_NORMAL, scope, PR_UNJOINABLE_THREAD, 0,
-                          i);
+    (void)create_new_thread(PR_USER_THREAD, File_Write_Wrapper, File_Write,
+                            (void*)fparamp, PR_PRIORITY_NORMAL, scope,
+                            PR_UNJOINABLE_THREAD, 0, i);
     offset += len;
   }
   thread_count = i;
@@ -453,9 +513,9 @@ static PRInt32 PR_CALLBACK FileTest(void) {
     fparamp->offset = offset;
     fparamp->len = len;
 
-    t = create_new_thread(PR_USER_THREAD, File_Read, (void*)fparamp,
-                          PR_PRIORITY_NORMAL, scope, PR_UNJOINABLE_THREAD, 0,
-                          i);
+    (void)create_new_thread(PR_USER_THREAD, File_Read_Wrapper, File_Read,
+                            (void*)fparamp, PR_PRIORITY_NORMAL, scope,
+                            PR_UNJOINABLE_THREAD, 0, i);
     offset += len;
     if ((offset + len) > BUF_DATA_SIZE) {
       break;
@@ -517,8 +577,9 @@ static PRInt32 RunDirTest(void) {
 
   for (i = 0; i < NUM_DIRTEST_THREADS; i++) {
     thrarg.done = 0;
-    t = create_new_thread(PR_USER_THREAD, DirTest, &thrarg, PR_PRIORITY_NORMAL,
-                          PR_LOCAL_THREAD, PR_UNJOINABLE_THREAD, 0, i);
+    t = create_new_thread(PR_USER_THREAD, DirTestWrapper, DirTestVoid, &thrarg,
+                          PR_PRIORITY_NORMAL, PR_LOCAL_THREAD,
+                          PR_UNJOINABLE_THREAD, 0, i);
     if (!t) {
       printf("RunDirTest: Error - failed to create thread\n");
       dirtest_failed = 1;
