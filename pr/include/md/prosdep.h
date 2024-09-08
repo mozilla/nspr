@@ -15,6 +15,7 @@ PR_BEGIN_EXTERN_C
 
 #ifdef XP_PC
 
+#include "md/_pcos.h"
 #ifdef WINNT
 #include "md/_winnt.h"
 #include "md/_win32_errors.h"
@@ -56,6 +57,9 @@ PR_BEGIN_EXTERN_C
 
 #elif defined(NTO)
 #include "md/_nto.h"
+
+#elif defined(RISCOS)
+#include "md/_riscos.h"
 
 #else
 #error unknown Unix flavor
