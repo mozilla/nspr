@@ -820,11 +820,6 @@ static void _pt_thread_death_internal(void* arg, PRBool callDestructors) {
   if (NULL != thred->syspoll_list) {
     PR_Free(thred->syspoll_list);
   }
-#  if defined(_PR_POLL_WITH_SELECT)
-  if (NULL != thred->selectfd_list) {
-    PR_Free(thred->selectfd_list);
-  }
-#  endif
 #  if defined(DEBUG)
   memset(thred, 0xaf, sizeof(PRThread));
 #  endif /* defined(DEBUG) */
