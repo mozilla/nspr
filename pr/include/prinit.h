@@ -8,7 +8,6 @@
 
 #include "prthread.h"
 #include "prtypes.h"
-#include "prwin.h"
 #include <stdio.h>
 
 PR_BEGIN_EXTERN_C
