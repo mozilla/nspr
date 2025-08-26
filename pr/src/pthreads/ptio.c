@@ -11,10 +11,8 @@
 #if defined(_PR_PTHREADS)
 
 #  if defined(_PR_POLL_WITH_SELECT)
-#    if !(defined(HPUX) && defined(_USE_BIG_FDS))
 /* set fd limit for select(), before including system header files */
 #      define FD_SETSIZE (16 * 1024)
-#    endif
 #  endif
 
 #  include <pthread.h>
@@ -182,9 +180,7 @@ static ssize_t (*pt_aix_sendfile_fptr)() = NULL;
 static PRBool _pr_ipv6_v6only_on_by_default;
 #  endif
 
-#  if (defined(HPUX) && !defined(HPUX10_30) && !defined(HPUX11))
-#    define _PRSelectFdSetArg_t int*
-#  elif defined(AIX4_1)
+#  if   defined(AIX4_1)
 #    define _PRSelectFdSetArg_t void*
 #  elif (defined(AIX) && !defined(AIX4_1)) || defined(SOLARIS) ||   \
       defined(HPUX10_30) || defined(HPUX11) || defined(LINUX) ||    \
@@ -3273,7 +3269,7 @@ static PRIOMethods _pr_socketpollfd_methods = {
     (PRReservedFN)_PR_InvalidInt,
     (PRReservedFN)_PR_InvalidInt};
 
-#  if defined(HPUX) || defined(SOLARIS) || defined(LINUX) ||     \
+#  if defined(SOLARIS) || defined(LINUX) ||     \
       defined(__GNU__) || defined(__GLIBC__) || defined(AIX) ||  \
       defined(FREEBSD) || defined(NETBSD) || defined(OPENBSD) || \
       defined(NTO) || defined(DARWIN) || defined(RISCOS)
@@ -3306,14 +3302,7 @@ static void pt_MakeFdNonblock(PRIntn osfd) {
  * Other platforms just use the generic pt_MakeFdNonblock
  * to put a socket in non-blocking mode.
  */
-#  ifdef HPUX
-static void pt_MakeSocketNonblock(PRIntn osfd) {
-  PRIntn one = 1;
-  (void)ioctl(osfd, FIOSNBIO, &one);
-}
-#  else
 #    define pt_MakeSocketNonblock pt_MakeFdNonblock
-#  endif
 
 static PRFileDesc* pt_SetMethods(PRIntn osfd, PRDescType type,
                                  PRBool isAcceptedSocket, PRBool imported) {
@@ -4735,7 +4724,7 @@ PR_IMPLEMENT(PRInt32) PR_FD_NISSET(PRInt32 fd, PR_fd_set* set) {
 
 #  include <sys/types.h>
 #  include <sys/time.h>
-#  if !defined(HPUX) && !defined(LINUX) && !defined(__GNU__) && \
+#  if !defined(LINUX) && !defined(__GNU__) && \
       !defined(__GLIBC__)
 #    include <sys/select.h>
 #  endif
