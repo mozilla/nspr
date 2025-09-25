@@ -1809,7 +1809,7 @@ static PRInt32 pt_TCP_SendTo(PRFileDesc* fd, const void* buf, PRInt32 amount,
                              PRIntn flags, const PRNetAddr* addr,
                              PRIntervalTime timeout) {
 #    if defined(LINUX) || HAS_CONNECTX
-  PRInt32 syserrno, bytes = -1;
+  PRInt32 syserrno;
   PRBool fNeedContinue = PR_FALSE;
   pt_SockLen addr_len;
   const PRNetAddr* addrp = addr;
@@ -1821,7 +1821,7 @@ static PRInt32 pt_TCP_SendTo(PRFileDesc* fd, const void* buf, PRInt32 amount,
 #      endif
 
   if (pt_TestAbort()) {
-    return bytes;
+    return -1;
   }
 
   PR_ASSERT(IsValidNetAddr(addr) == PR_TRUE);
@@ -1849,9 +1849,14 @@ static PRInt32 pt_TCP_SendTo(PRFileDesc* fd, const void* buf, PRInt32 amount,
   addrp = &addrCopy;
 #      endif
 
+  size_t bytes = 0;
+  PRInt32 netResult = 0;
 #      ifndef HAS_CONNECTX
-  bytes = sendto(fd->secret->md.osfd, buf, amount, MSG_FASTOPEN,
-                 (struct sockaddr*)addrp, addr_len);
+  netResult = sendto(fd->secret->md.osfd, buf, amount, MSG_FASTOPEN,
+                     (struct sockaddr*)addrp, addr_len);
+  if (netResult >= 0) {
+    bytes = netResult;
+  }
 #      else
   sa_endpoints_t endpoints;
   endpoints.sae_srcif = 0;
@@ -1862,11 +1867,11 @@ static PRInt32 pt_TCP_SendTo(PRFileDesc* fd, const void* buf, PRInt32 amount,
   struct iovec iov[1];
   iov[0].iov_base = buf;
   iov[0].iov_len = amount;
-  PRInt32 rv = connectx(fd->secret->md.osfd, &endpoints, SAE_ASSOCID_ANY,
-                        CONNECT_DATA_IDEMPOTENT, iov, 1, &bytes, NULL);
+  netResult = connectx(fd->secret->md.osfd, &endpoints, SAE_ASSOCID_ANY,
+                       CONNECT_DATA_IDEMPOTENT, iov, 1, &bytes, NULL);
 #      endif
   syserrno = errno;
-  if ((bytes == -1) && (syserrno == EWOULDBLOCK || syserrno == EAGAIN) &&
+  if ((netResult < 0) && (syserrno == EWOULDBLOCK || syserrno == EAGAIN) &&
       (!fd->secret->nonblocking)) {
     if (PR_INTERVAL_NO_WAIT == timeout) {
       syserrno = ETIMEDOUT;
@@ -1885,14 +1890,18 @@ static PRInt32 pt_TCP_SendTo(PRFileDesc* fd, const void* buf, PRInt32 amount,
     op.result.code = 0; /* initialize the number sent */
     op.function = pt_sendto_cont;
     op.event = POLLOUT | POLLPRI;
-    bytes = pt_Continue(&op);
+    netResult = pt_Continue(&op);
+    if (netResult >= 0) {
+      bytes = netResult;
+    }
     syserrno = op.syserrno;
   }
-  if (bytes < 0) {
+  if (netResult < 0) {
     pt_MapError(_PR_MD_MAP_SENDTO_ERROR, syserrno);
+    return -1;
   }
   return bytes;
-#    else /* !HAS_CONNECTX */
+#    else /* !(defined(LINUX) || HAS_CONNECTX) */
   PR_SetError(PR_NOT_IMPLEMENTED_ERROR, 0);
   return -1;
 #    endif
