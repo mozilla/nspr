@@ -2016,7 +2016,9 @@ void _MD_MakeNonblock(PRFileDesc* fd) {
    * otherwise connect() still blocks and can be interrupted by SIGALRM.
    */
 
-  fcntl(osfd, F_SETFL, flags | O_NONBLOCK);
+  if (fcntl(osfd, F_SETFL, flags | O_NONBLOCK) != -1) {
+    fd->secret->nonblocking = PR_TRUE;
+  }
 }
 
 PRInt32 _MD_open(const char* name, PRIntn flags, PRIntn mode) {

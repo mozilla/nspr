@@ -988,11 +988,14 @@ PRInt32 _md_Associate(HANDLE file) {
  * Make a socket nonblocking.
  * Returns 0 on failure, 1 on success.
  */
-static PRInt32 _md_MakeNonblock(HANDLE file) {
+static PRInt32 _md_MakeNonblock(HANDLE file, PRFilePrivate* secret) {
   int rv;
   u_long one = 1;
 
   rv = ioctlsocket((SOCKET)file, FIONBIO, &one);
+  if (!rv) {
+    secret->nonblocking = PR_TRUE;
+  }
   /* XXX should map error codes on failures */
   return (rv == 0);
 }
@@ -1129,7 +1132,7 @@ PRInt32 _PR_MD_CONNECT(PRFileDesc* fd, const PRNetAddr* addr, PRUint32 addrlen,
 
   if (fd->secret->nonblocking) {
     if (!fd->secret->md.io_model_committed) {
-      rv = _md_MakeNonblock((HANDLE)osfd);
+      rv = _md_MakeNonblock((HANDLE)osfd, fd->secret);
       PR_ASSERT(0 != rv);
       fd->secret->md.io_model_committed = PR_TRUE;
     }
@@ -1222,7 +1225,7 @@ PROsfd _PR_MD_FAST_ACCEPT(PRFileDesc* fd, PRNetAddr* raddr, PRUint32* rlen,
 
   if (_NT_USE_NB_IO(fd)) {
     if (!fd->secret->md.io_model_committed) {
-      rv = _md_MakeNonblock((HANDLE)osfd);
+      rv = _md_MakeNonblock((HANDLE)osfd, fd->secret);
       PR_ASSERT(0 != rv);
       fd->secret->md.io_model_committed = PR_TRUE;
     }
@@ -1630,7 +1633,7 @@ PRInt32 _PR_MD_RECV(PRFileDesc* fd, void* buf, PRInt32 amount, PRIntn flags,
 
   if (_NT_USE_NB_IO(fd)) {
     if (!fd->secret->md.io_model_committed) {
-      rv = _md_MakeNonblock((HANDLE)osfd);
+      rv = _md_MakeNonblock((HANDLE)osfd, fd->secret);
       PR_ASSERT(0 != rv);
       fd->secret->md.io_model_committed = PR_TRUE;
     }
@@ -1727,7 +1730,7 @@ PRInt32 _PR_MD_SEND(PRFileDesc* fd, const void* buf, PRInt32 amount,
 
   if (_NT_USE_NB_IO(fd)) {
     if (!fd->secret->md.io_model_committed) {
-      rv = _md_MakeNonblock((HANDLE)osfd);
+      rv = _md_MakeNonblock((HANDLE)osfd, fd->secret);
       PR_ASSERT(0 != rv);
       fd->secret->md.io_model_committed = PR_TRUE;
     }
@@ -1816,7 +1819,7 @@ PRInt32 _PR_MD_SENDTO(PRFileDesc* fd, const void* buf, PRInt32 amount,
   PRInt32 rv;
 
   if (!fd->secret->md.io_model_committed) {
-    rv = _md_MakeNonblock((HANDLE)osfd);
+    rv = _md_MakeNonblock((HANDLE)osfd, fd->secret);
     PR_ASSERT(0 != rv);
     fd->secret->md.io_model_committed = PR_TRUE;
   }
@@ -1835,7 +1838,7 @@ PRInt32 _PR_MD_RECVFROM(PRFileDesc* fd, void* buf, PRInt32 amount, PRIntn flags,
   PRInt32 rv;
 
   if (!fd->secret->md.io_model_committed) {
-    rv = _md_MakeNonblock((HANDLE)osfd);
+    rv = _md_MakeNonblock((HANDLE)osfd, fd->secret);
     PR_ASSERT(0 != rv);
     fd->secret->md.io_model_committed = PR_TRUE;
   }
@@ -1857,7 +1860,7 @@ PRInt32 _PR_MD_WRITEV(PRFileDesc* fd, const PRIOVec* iov, PRInt32 iov_size,
 
   if (_NT_USE_NB_IO(fd)) {
     if (!fd->secret->md.io_model_committed) {
-      rv = _md_MakeNonblock((HANDLE)osfd);
+      rv = _md_MakeNonblock((HANDLE)osfd, fd->secret);
       PR_ASSERT(0 != rv);
       fd->secret->md.io_model_committed = PR_TRUE;
     }
