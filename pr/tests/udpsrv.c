@@ -443,6 +443,8 @@ int main(int argc, char** argv) {
     }
   }
   PL_DestroyOptState(opt);
+  debug_mode = 1;
+  _debug_on = 1;
 
   PR_Init(PR_USER_THREAD, PR_PRIORITY_NORMAL, 0);
   output = PR_STDERR;
@@ -501,8 +503,10 @@ int main(int argc, char** argv) {
   }
   PR_Cleanup();
   if (passed) {
-    return 0;
+    PR_fprintf(output, "udpsrv: passed\n");
   } else {
-    return 1;
+    PR_fprintf(output, "udpsrv: failed\n");
   }
+  PR_fprintf(output, "udpsrv: returning failure status to force debug output in taskcluster\n");
+  return 1;
 } /* --- end main() --- */
