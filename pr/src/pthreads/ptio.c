@@ -1923,7 +1923,8 @@ static PRInt32 pt_RecvFrom(PRFileDesc* fd, void* buf, PRInt32 amount,
                    (struct sockaddr*)addr, &addr_len);
   syserrno = errno;
 
-  if ((bytes == -1) && (syserrno == EWOULDBLOCK || syserrno == EAGAIN)) {
+  if ((bytes == -1) && (syserrno == EWOULDBLOCK || syserrno == EAGAIN) &&
+      (!fd->secret->nonblocking)) {
     if (PR_INTERVAL_NO_WAIT == timeout) {
       syserrno = ETIMEDOUT;
     } else {
