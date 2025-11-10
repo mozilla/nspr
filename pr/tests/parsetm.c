@@ -59,6 +59,50 @@ static void PrintExplodedTime(const PRExplodedTime* et) {
   }
 }
 
+static PRStatus KnownAnswerTest(void) {
+  // Reference time value is 15 Oct 2007, 19:45:00 GMT
+  const PRInt64 referenceTime = PR_INT64(1192477500000000);
+  const PRInt64 referenceTimePlus23Sec = PR_INT64(1192477523000000);
+  static const struct {
+    const char* string;
+    PRBool default_to_gmt;
+    PRTime expected;
+  } tests[] = {
+      {"Mon, 15 Oct 2007 19:45:00 GMT", PR_FALSE, referenceTime},
+      {"15 Oct 07 19:45 GMT", PR_FALSE, referenceTime},
+      {"Mon Oct 15 12:45 PDT 2007", PR_FALSE, referenceTime},
+      {"16 Oct 2007 4:45-JST (Tuesday)", PR_FALSE, referenceTime},
+      // Not normalized.
+      {"Mon Oct 15 12:44:60 PDT 2007", PR_FALSE, referenceTime},
+      // Not normalized.
+      {"Sun Oct 14 36:45 PDT 2007", PR_FALSE, referenceTime},
+      {"Mon, 15 Oct 2007 19:45:23 GMT", PR_FALSE, referenceTimePlus23Sec},
+  };
+
+  PRBool failed = PR_FALSE;
+
+  for (int i = 0; i < sizeof(tests) / sizeof(tests[0]); i++) {
+    PRTime result = 0;
+    if (PR_ParseTimeString(tests[i].string, tests[i].default_to_gmt, &result) !=
+        PR_SUCCESS) {
+      printf("PR_ParseTimeString(\"%s\", %s, &result) failed\n",
+             tests[i].string, tests[i].default_to_gmt ? "PR_TRUE" : "PR_FALSE");
+      failed = PR_TRUE;
+      continue;
+    }
+    if (result != tests[i].expected) {
+      printf(
+          "PR_ParseTimeString(\"%s\", %s, &result) returns %lld, expected "
+          "%lld\n",
+          tests[i].string, tests[i].default_to_gmt ? "PR_TRUE" : "PR_FALSE",
+          (long long)result, (long long)tests[i].expected);
+      failed = PR_TRUE;
+    }
+  }
+
+  return failed ? PR_FAILURE : PR_SUCCESS;
+}
+
 int main(int argc, char** argv) {
   PRTime ct;
   PRExplodedTime et;
@@ -84,5 +128,11 @@ int main(int argc, char** argv) {
   PrintExplodedTime(&et);
   printf("\n");
 
+  if (KnownAnswerTest() != PR_SUCCESS) {
+    printf("FAIL\n");
+    return 1;
+  }
+
+  printf("PASS\n");
   return 0;
 }
