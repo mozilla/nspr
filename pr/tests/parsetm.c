@@ -54,23 +54,20 @@ static void PrintExplodedTime(const PRExplodedTime* et) {
 }
 
 static PRStatus KnownAnswerTest(void) {
-  // Reference time value is 15 Oct 2007, 19:45:00 GMT
-  const PRInt64 referenceTime = PR_INT64(1192477500000000);
-  const PRInt64 referenceTimePlus23Sec = PR_INT64(1192477523000000);
   static const struct {
     const char* string;
     PRBool default_to_gmt;
     PRTime expected;
   } tests[] = {
-      {"Mon, 15 Oct 2007 19:45:00 GMT", PR_FALSE, referenceTime},
-      {"15 Oct 07 19:45 GMT", PR_FALSE, referenceTime},
-      {"Mon Oct 15 12:45 PDT 2007", PR_FALSE, referenceTime},
-      {"16 Oct 2007 4:45-JST (Tuesday)", PR_FALSE, referenceTime},
+      {"Mon, 15 Oct 2007 19:45:00 GMT", PR_FALSE, PR_INT64(1192477500000000)},
+      {"15 Oct 07 19:45 GMT", PR_FALSE, PR_INT64(1192477500000000)},
+      {"Mon Oct 15 12:45 PDT 2007", PR_FALSE, PR_INT64(1192477500000000)},
+      {"16 Oct 2007 4:45-JST (Tuesday)", PR_FALSE, PR_INT64(1192477500000000)},
       // Not normalized.
-      {"Mon Oct 15 12:44:60 PDT 2007", PR_FALSE, referenceTime},
+      {"Mon Oct 15 12:44:60 PDT 2007", PR_FALSE, PR_INT64(1192477500000000)},
       // Not normalized.
-      {"Sun Oct 14 36:45 PDT 2007", PR_FALSE, referenceTime},
-      {"Mon, 15 Oct 2007 19:45:23 GMT", PR_FALSE, referenceTimePlus23Sec},
+      {"Sun Oct 14 36:45 PDT 2007", PR_FALSE, PR_INT64(1192477500000000)},
+      {"Mon, 15 Oct 2007 19:45:23 GMT", PR_FALSE, PR_INT64(1192477523000000)},
   };
 
   PRBool failed = PR_FALSE;
