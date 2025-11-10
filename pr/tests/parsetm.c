@@ -3,12 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/*
- * This test program should eventually become a full-blown test for
- * PR_ParseTimeString.  Right now it just verifies that PR_ParseTimeString
- * doesn't crash on an out-of-range time string (bug 480740).
- */
-
 #include "prtime.h"
 
 #include <time.h>
@@ -104,6 +98,10 @@ static PRStatus KnownAnswerTest(void) {
 }
 
 int main(int argc, char** argv) {
+  /*
+   * 1. Verify that PR_ParseTimeString doesn't crash on an out-of-range time
+   * string (bug 480740).
+   */
   PRTime ct;
   PRExplodedTime et;
   PRStatus rv;
@@ -128,6 +126,7 @@ int main(int argc, char** argv) {
   PrintExplodedTime(&et);
   printf("\n");
 
+  /* 2. Run a full-blown test for PR_ParseTimeString. */
   if (KnownAnswerTest() != PR_SUCCESS) {
     printf("FAIL\n");
     return 1;
