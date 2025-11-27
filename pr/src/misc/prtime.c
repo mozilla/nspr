@@ -49,7 +49,7 @@
  * each month, where index 1 is January, and day 0 is January 1.
  */
 
-static const int lastDayOfMonth[2][13] = {
+static const PRInt16 lastDayOfMonth[2][13] = {
     {-1, 30, 58, 89, 119, 150, 180, 211, 242, 272, 303, 333, 364},
     {-1, 30, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365}};
 
@@ -429,7 +429,7 @@ PR_NormalizeTime(PRExplodedTime* time, PRTimeParamFn params) {
 
   /* Recompute yday and wday */
   time->tm_yday =
-      time->tm_mday + lastDayOfMonth[IsLeapYear(time->tm_year)][time->tm_month];
+      (PRInt16)time->tm_mday + lastDayOfMonth[IsLeapYear(time->tm_year)][time->tm_month];
 
   numDays = DAYS_BETWEEN_YEARS(1970, time->tm_year) + time->tm_yday;
   time->tm_wday = (numDays + 4) % 7;
@@ -1584,10 +1584,10 @@ PR_ParseTimeStringToExplodedTime(const char* string, PRBool default_to_gmt,
     result->tm_month = (((int)month) - ((int)TT_JAN));
   }
   if (year != -1) {
-    result->tm_year = year;
+    result->tm_year = (PRInt16)year;
   }
   if (dotw != TT_UNKNOWN) {
-    result->tm_wday = (((int)dotw) - ((int)TT_SUN));
+    result->tm_wday = (PRInt8)(((int)dotw) - ((int)TT_SUN));
   }
   /*
    * Mainly to compute wday and yday, but normalized time is also required
