@@ -209,6 +209,7 @@ PR_IMPLEMENT(void) PL_ArenaRelease(PLArenaPool* pool, char* mark) {
   for (a = &pool->first; a; a = a->next) {
     if (PR_UPTRDIFF(mark, a->base) <= PR_UPTRDIFF(a->avail, a->base)) {
       a->avail = (PRUword)PL_ARENA_ALIGN(pool, mark);
+      PL_MAKE_MEM_NOACCESS((void*)a->avail, a->limit - a->avail);
       FreeArenaList(pool, a);
       return;
     }
