@@ -165,6 +165,7 @@ PL_ArenaGrow(PLArenaPool* pool, void* p, PRUint32 size, PRUint32 incr) {
   PL_ARENA_ALLOCATE(newp, pool, size + incr);
   if (newp) {
     memcpy(newp, p, size);
+    PL_MAKE_MEM_NOACCESS(p, size);
   }
   return newp;
 }
