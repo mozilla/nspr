@@ -35,20 +35,12 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        shell: msys2 {0}
+        shell: 'C:\msys64\usr\bin\bash.exe -leo pipefail {0}'
+    env:
+      MSYSTEM: MINGW64
+      CHERE_INVOKING: 1
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            base-devel
-            autoconf
-            make
-            mingw-w64-x86_64-gcc
 
       - name: Configure and build
         run: |
