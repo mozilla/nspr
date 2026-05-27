@@ -55,6 +55,37 @@ jobs:
           ../configure --enable-64bit --prefix=$PWD/dist
           make -j$(getconf _NPROCESSORS_ONLN)
 
+  sanitizers:
+    name: ubuntu-latest (clang, ASan+UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure and build
+        env:
+          CC: clang
+          CFLAGS: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: |
+          mkdir target
+          cd target
+          ../configure --enable-64bit --enable-debug --prefix=$PWD/dist
+          make -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Build tests
+        env:
+          CC: clang
+          CFLAGS: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: make -C target/pr/tests -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Run tests
+        working-directory: target/pr/tests
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:abort_on_error=1:halt_on_error=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+        run: ../../../pr/tests/runtests.sh ../../dist
+
   coverage:
     name: ubuntu-latest (coverage)
     runs-on: ubuntu-latest
