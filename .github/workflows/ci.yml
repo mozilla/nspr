@@ -84,6 +84,62 @@ jobs:
       - name: Check formatting (ruff format)
         run: ruff format --check .
 
+  sanitizers:
+    name: ubuntu-latest (clang, ASan+UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure and build
+        env:
+          CC: clang
+          CFLAGS: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: |
+          mkdir target
+          cd target
+          ../configure --enable-64bit --enable-debug --prefix=$PWD/dist
+          make -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Build tests
+        env:
+          CC: clang
+          CFLAGS: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: make -C target/pr/tests -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Run tests
+        working-directory: target/pr/tests
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:abort_on_error=1:halt_on_error=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+        run: ../../../pr/tests/runtests.sh ../../dist
+
+      - name: Build lib/tests
+        env:
+          CC: clang
+          CFLAGS: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: make -C target/lib/tests -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Run lib/tests
+        working-directory: target/lib/tests
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:abort_on_error=1:halt_on_error=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          LSAN_OPTIONS: "suppressions=${{ github.workspace }}/build/sanitizers/lsan_suppressions.txt:print_suppressions=0"
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/target/dist/lib:$LD_LIBRARY_PATH"
+          rval=0
+          for prog in arena base64t getopt string; do
+            printf 'Running %s\n' "$prog"
+            if ! ./"$prog"; then
+              printf 'FAILED: %s\n' "$prog"
+              rval=1
+            fi
+          done
+          exit $rval
+
   coverage:
     name: ubuntu-latest (coverage)
     runs-on: ubuntu-latest
