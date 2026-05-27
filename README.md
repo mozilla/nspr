@@ -5,7 +5,8 @@
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
 
 > [!WARNING]
-> **NSPR is a legacy library and should not be used for new projects.**
+> **NSPR is a legacy library (started in 1994!) and should not be used
+> for new projects.**
 > It predates modern C/C++ standards and the portable threading, I/O,
 > time, and networking primitives now available in the standard library
 > and the operating system. New code should rely on those instead
