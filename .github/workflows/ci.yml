@@ -90,7 +90,7 @@ jobs:
         run: |
           lcov --directory target --capture --output-file coverage.info \
                --ignore-errors mismatch,negative,unused,gcov,source
-          lcov --remove coverage.info '/usr/*' --output-file coverage.info \
+          lcov --remove coverage.info '/usr/*' '*/pr/tests/*' --output-file coverage.info \
                --ignore-errors unused
           lcov --list coverage.info
 
