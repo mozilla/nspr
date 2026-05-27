@@ -38,6 +38,23 @@ jobs:
         working-directory: target/pr/tests
         run: ../../../pr/tests/runtests.sh ../../dist
 
+  warnings-as-errors:
+    name: ubuntu-latest (clang, -Wall -Werror)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure and build
+        env:
+          CC: clang
+          CFLAGS: "-Wall -Werror -Qunused-arguments"
+        run: |
+          mkdir target
+          cd target
+          ../configure --enable-64bit --prefix=$PWD/dist
+          make -j$(getconf _NPROCESSORS_ONLN)
+
   coverage:
     name: ubuntu-latest (coverage)
     runs-on: ubuntu-latest
