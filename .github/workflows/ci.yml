@@ -46,8 +46,25 @@ jobs:
       - name: Install MSYS2 packages
         run: |
           pacman -S --noconfirm --needed \
-            base-devel autoconf make \
+            base-devel autoconf make python \
             mingw-w64-x86_64-gcc
+
+      - name: Install nsinstall (Firefox's Python port)
+        run: |
+          curl -sSfL \
+            https://raw.githubusercontent.com/mozilla/gecko-dev/master/config/nsinstall.py \
+            -o /usr/local/bin/nsinstall.py
+          # The only `mozfile` use is one Windows read-only-file removal; replace it
+          # with a chmod+unlink fallback so we don't need the mozbuild package.
+          sed -i \
+            -e 's/^import mozfile$//' \
+            -e 's/mozfile\.remove(targetpath)/os.chmod(targetpath, 0o666); os.remove(targetpath)/' \
+            /usr/local/bin/nsinstall.py
+          cat > /usr/local/bin/nsinstall <<'EOF'
+          #!/usr/bin/env bash
+          exec python3 /usr/local/bin/nsinstall.py "$@"
+          EOF
+          chmod +x /usr/local/bin/nsinstall
 
       - name: Configure and build
         run: |
