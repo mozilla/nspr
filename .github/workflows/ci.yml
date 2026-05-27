@@ -28,7 +28,8 @@ jobs:
         run: make -C target/pr/tests -j$(getconf _NPROCESSORS_ONLN)
 
       - name: Run tests
-        run: ./pr/tests/runtests.sh target/dist
+        working-directory: target/pr/tests
+        run: ../../../pr/tests/runtests.sh ../../dist
 
   windows:
     name: windows-latest
@@ -42,15 +43,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install MSYS2 packages
+        run: |
+          pacman -S --noconfirm --needed \
+            base-devel autoconf make \
+            mingw-w64-x86_64-gcc
+
       - name: Configure and build
         run: |
+          export PATH="/mingw64/bin:$PATH"
           mkdir target
           cd target
           ../configure --enable-64bit --prefix=$PWD/dist
           make -j$(nproc)
 
       - name: Build tests
-        run: make -C target/pr/tests -j$(nproc)
+        run: |
+          export PATH="/mingw64/bin:$PATH"
+          make -C target/pr/tests -j$(nproc)
 
       - name: Run tests
-        run: ./pr/tests/runtests.sh target/dist
+        working-directory: target/pr/tests
+        run: |
+          export PATH="/mingw64/bin:$PATH"
+          ../../../pr/tests/runtests.sh ../../dist
