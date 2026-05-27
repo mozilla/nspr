@@ -56,7 +56,7 @@ jobs:
           CFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
           CXXFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
           LDFLAGS: "--coverage"
-        run: make -C target/pr/tests -j$(getconf _NPROCESSORS_ONLN)
+        run: make -C target/pr/tests -j$(getconf _NPROCESSORS_ONLN) XCFLAGS=--coverage
 
       - name: Run tests
         working-directory: target/pr/tests
