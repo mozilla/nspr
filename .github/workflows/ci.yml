@@ -50,4 +50,4 @@ jobs:
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VSPATH=%%i
           call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat"
           set MOZILLABUILD=C:\mozilla-build\
-          C:\mozilla-build\msys2\msys2_shell.cmd -no-start -defterm -full-path -c "set -e; cd '%CD%' && mkdir target && cd target && ../configure --enable-64bit --enable-win32-target=WIN95 --prefix=$PWD/dist && make -j$NUMBER_OF_PROCESSORS && make -C pr/tests -j$NUMBER_OF_PROCESSORS && cd pr/tests && ../../../pr/tests/runtests.sh ../../dist"
+          C:\mozilla-build\msys2\msys2_shell.cmd -no-start -defterm -full-path -c "set -e; export PATH=\"$(cygpath -u \"$VCToolsInstallDir\")bin/Hostx64/x64:$PATH\"; cd '%CD%' && mkdir target && cd target && ../configure --enable-64bit --enable-win32-target=WIN95 --prefix=$PWD/dist && make -j$NUMBER_OF_PROCESSORS && make -C pr/tests -j$NUMBER_OF_PROCESSORS && cd pr/tests && ../../../pr/tests/runtests.sh ../../dist"
