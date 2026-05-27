@@ -8,16 +8,23 @@ on:
 
 jobs:
   unix:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }}${{ matrix.cc && format(' ({0})', matrix.cc) || '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+          - os: ubuntu-latest
+            cc: clang
+          - os: macos-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure and build
+        env:
+          CC: ${{ matrix.cc }}
         run: |
           mkdir target
           cd target
