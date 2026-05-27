@@ -31,6 +31,52 @@ jobs:
         working-directory: target/pr/tests
         run: ../../../pr/tests/runtests.sh ../../dist
 
+  coverage:
+    name: ubuntu-latest (coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Configure and build with coverage
+        env:
+          CFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
+          CXXFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
+          LDFLAGS: "--coverage"
+        run: |
+          mkdir target
+          cd target
+          ../configure --enable-64bit --enable-debug --prefix=$PWD/dist
+          make -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Build tests
+        env:
+          CFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
+          CXXFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
+          LDFLAGS: "--coverage"
+        run: make -C target/pr/tests -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Run tests
+        working-directory: target/pr/tests
+        run: ../../../pr/tests/runtests.sh ../../dist
+
+      - name: Capture coverage
+        run: |
+          lcov --directory target --capture --output-file coverage.info \
+               --ignore-errors mismatch,negative,unused,gcov,source
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info \
+               --ignore-errors unused
+          lcov --list coverage.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   windows:
     name: windows-latest
     runs-on: windows-latest
