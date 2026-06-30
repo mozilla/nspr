@@ -96,6 +96,7 @@ static PRStatus NSPRPUB_TESTS_CreateThread(StartFn start, void* arg) {
       int rv;
       pthread_t id;
       pthread_attr_t tattr;
+      size_t stacksize = 64 * 1024;
       StartObject* start_object;
       start_object = PR_NEW(StartObject);
       PR_ASSERT(NULL != start_object);
@@ -108,7 +109,15 @@ static PRStatus NSPRPUB_TESTS_CreateThread(StartFn start, void* arg) {
       rv = pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
       PR_ASSERT(0 == rv);
 
-      rv = pthread_attr_setstacksize(&tattr, 64 * 1024);
+      /* Some platforms (e.g. aarch64 glibc) have a PTHREAD_STACK_MIN that
+       * exceeds our default, which makes pthread_attr_setstacksize fail with
+       * EINVAL.  Never request less than the platform minimum. */
+#ifdef PTHREAD_STACK_MIN
+      if (stacksize < (size_t)PTHREAD_STACK_MIN) {
+        stacksize = (size_t)PTHREAD_STACK_MIN;
+      }
+#endif
+      rv = pthread_attr_setstacksize(&tattr, stacksize);
       PR_ASSERT(0 == rv);
 
       rv = _PT_PTHREAD_CREATE(&id, tattr, pthread_start, start_object);
