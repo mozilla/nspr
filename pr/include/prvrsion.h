@@ -11,6 +11,12 @@
 
 #include "prtypes.h"
 
+#if defined(__clang__) || \
+    (defined(__GNUC__) && \
+     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
+#  define _PR_HAS_PRAGMA_DIAGNOSTIC
+#endif
+
 PR_BEGIN_EXTERN_C
 
 /* All components participating in the PR version protocol must expose

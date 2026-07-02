@@ -1303,7 +1303,7 @@ PRUintn _PR_NetAddrSize(const PRNetAddr* addr) {
 #  if defined(LINUX)
     if (addr->local.path[0] == 0)
       /* abstract socket address is supported on Linux only */
-      addrsize = strnlen(addr->local.path + 1, sizeof(addr->local.path)) +
+      addrsize = strnlen(addr->local.path + 1, sizeof(addr->local.path) - 1) +
                  offsetof(struct sockaddr_un, sun_path) + 1;
     else
 #  endif
