@@ -104,7 +104,12 @@ LL_MaxUint(void);
 **  LL_ADD            Summation (two's complement)
 **  LL_SUB            Difference (two's complement)
 ***********************************************************************/
-#define LL_NEG(r, a) ((r) = -(a))
+/*
+ * Negate as unsigned so that negating the most-negative value is
+ * well-defined (negating it as signed is undefined behavior and trips
+ * -fsanitize=undefined). The two's-complement result is unchanged.
+ */
+#define LL_NEG(r, a) ((r) = (PRInt64)(-(PRUint64)(a)))
 #define LL_ADD(r, a, b) ((r) = (a) + (b))
 #define LL_SUB(r, a, b) ((r) = (a) - (b))
 
