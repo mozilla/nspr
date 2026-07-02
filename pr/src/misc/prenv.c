@@ -135,7 +135,9 @@ PR_IMPLEMENT(char**) PR_DuplicateEnvironment(void) {
   the_environ = environ;
 #  endif
 
-  for (end = the_environ; *end != NULL; end++) /* empty loop body */;
+  for (end = the_environ; *end != NULL; end++) {
+    /* empty loop body */;
+  }
 
   result = (char**)PR_Malloc(sizeof(char*) * (end - the_environ + 1));
   if (result != NULL) {
