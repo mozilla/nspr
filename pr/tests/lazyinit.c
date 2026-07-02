@@ -58,6 +58,12 @@ main(int argc, char** argv)
     switch (test) {
         case 0:
             ml = PR_NewLock();
+            /* The lazy initialization has already happened; releasing the lock
+             * afterwards keeps the test leak-free without defeating its purpose.
+             */
+            if (ml != NULL) {
+                PR_DestroyLock(ml);
+            }
             break;
 
         case 1:
@@ -68,22 +74,37 @@ main(int argc, char** argv)
             thread =
                 PR_CreateThread(PR_USER_THREAD, lazyEntry, NULL, PR_PRIORITY_NORMAL,
                                 PR_LOCAL_THREAD, PR_JOINABLE_THREAD, 0);
+            if (thread != NULL) {
+                (void)PR_JoinThread(thread);
+            }
             break;
 
         case 3:
             file = PR_Open("./tmp-", PR_RDONLY, 0);
+            if (file != NULL) {
+                PR_Close(file);
+            }
             break;
 
         case 4:
             udp = PR_NewUDPSocket();
+            if (udp != NULL) {
+                PR_Close(udp);
+            }
             break;
 
         case 5:
             tcp = PR_NewTCPSocket();
+            if (tcp != NULL) {
+                PR_Close(tcp);
+            }
             break;
 
         case 6:
             dir = PR_OpenDir("./tmp-");
+            if (dir != NULL) {
+                PR_CloseDir(dir);
+            }
             break;
 
         case 7:
@@ -96,6 +117,10 @@ main(int argc, char** argv)
 
         case 9:
             status = PR_NewTCPSocketPair(pair);
+            if (status == PR_SUCCESS) {
+                PR_Close(pair[0]);
+                PR_Close(pair[1]);
+            }
             break;
 
         case 10:
