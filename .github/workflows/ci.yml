@@ -64,10 +64,10 @@ jobs:
       - name: Install clang-format
         run: sudo apt-get update && sudo apt-get install -y clang-format
 
-      - name: Check formatting (informational, never fails)
+      - name: Check formatting (fails if not formatted)
         run: |
           files=$(find pr lib -type f \( -name '*.c' -o -name '*.h' \))
-          clang-format --dry-run $files || true
+          clang-format --dry-run $files
 
   coverage:
     name: ubuntu-latest (coverage)
