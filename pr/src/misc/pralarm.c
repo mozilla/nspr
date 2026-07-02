@@ -48,21 +48,21 @@ pr_getNextAlarm(PRAlarm* alarm, PRAlarmID* id)
      */
     PRCList* timer;
     PRAlarmID* result = id;
-    PRIntervalTime now = PR_IntervalNow();
 
     if (!PR_CLIST_IS_EMPTY(&alarm->timers)) {
         if (id != NULL) /* have to put this id back in */
         {
-            PRIntervalTime idDelta = now - id->nextNotify;
-            timer = alarm->timers.next;
-            do {
-                result = (PRAlarmID*)timer;
-                if ((PRIntervalTime)(now - result->nextNotify) > idDelta) {
-                    PR_INSERT_BEFORE(&id->list, &alarm->timers);
-                    break;
-                }
-                timer = timer->next;
-            } while (timer != &alarm->timers);
+            /*
+             * This used to walk the list looking for the sorted insertion
+             * point, but every branch of that walk (including the one that
+             * "found" the spot) inserted before the list head, i.e. at the
+             * tail -- and when the walk ran off the end it inserted nowhere
+             * at all, leaking 'id' and dropping the alarm. Since the list is
+             * only ever consumed from the head right below, appending at the
+             * tail unconditionally is what the old code effectively did,
+             * minus the leak.
+             */
+            PR_INSERT_BEFORE(&id->list, &alarm->timers);
         }
         result = (PRAlarmID*)(timer = PR_LIST_HEAD(&alarm->timers));
         PR_REMOVE_LINK(timer); /* remove it from the list */
@@ -108,6 +108,15 @@ pr_alarmNotifier(void* arg)
         while (why == scan) {
             alarm->current = NULL; /* reset current id */
             if (alarm->state == alarm_inactive) {
+                /*
+                 * We're about to exit. If we're still holding an alarm id
+                 * that we pulled off the list, put it back so that
+                 * PR_DestroyAlarm can find it and free it.
+                 */
+                if (id != NULL) {
+                    PR_INSERT_BEFORE(&id->list, &alarm->timers);
+                    id = NULL;
+                }
                 why = abort;        /* we're toast */
             } else if (why == scan) /* the dominant case */
             {
@@ -193,6 +202,16 @@ PR_DestroyAlarm(PRAlarm* alarm)
         rv = PR_JoinThread(alarm->notifier);
     }
     if (rv == PR_SUCCESS) {
+        /*
+         * The notifier thread has exited, so nothing else can be touching
+         * the timers list and no locking is needed. Free any alarm ids that
+         * were still pending when the alarm was destroyed.
+         */
+        while (!PR_CLIST_IS_EMPTY(&alarm->timers)) {
+            PRAlarmID* id = (PRAlarmID*)PR_LIST_HEAD(&alarm->timers);
+            PR_REMOVE_LINK(&id->list);
+            PR_DELETE(id);
+        }
         PR_DestroyCondVar(alarm->cond);
         PR_DestroyLock(alarm->lock);
         PR_DELETE(alarm);
