@@ -92,7 +92,7 @@ private:
 **  After extracted, the memory still belongs to the class - if the
 **  caller wants to retain or modify, it must first be copied.
 */
-class PR_IMPLEMENT(RCFormat): pubic RCFormatBuffer
+class PR_IMPLEMENT(RCFormat): public RCFormatBuffer
 {
 public:
     RCFormat();
