@@ -113,6 +113,7 @@ jobs:
         env:
           ASAN_OPTIONS: "detect_leaks=1:abort_on_error=1:halt_on_error=1"
           UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          LSAN_OPTIONS: "suppressions=${{ github.workspace }}/build/sanitizers/lsan_suppressions.txt:print_suppressions=0"
         run: ../../../pr/tests/runtests.sh ../../dist
 
       - name: Build lib/tests
