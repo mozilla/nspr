@@ -7,4 +7,4 @@
 extern PRIntn my_global;
 
 PR_IMPLEMENT(PRIntn)
-My_GetValue() { return my_global; }
+My_GetValue(void) { return my_global; }
