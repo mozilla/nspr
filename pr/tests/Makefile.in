@@ -248,9 +248,6 @@ ifeq ($(OS_ARCH), SunOS)
     ifdef NS_USE_GCC
         LDOPTS += -Xlinker -R -Xlinker $(ABSOLUTE_LIB_DIR)
     else
-        ifeq ($(USE_CPLUS), 1)
-            CC = CC
-        endif
         LDOPTS += -R $(ABSOLUTE_LIB_DIR)
     endif
 
