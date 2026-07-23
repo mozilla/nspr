@@ -69,6 +69,21 @@ jobs:
           files=$(find pr lib -type f \( -name '*.c' -o -name '*.h' \))
           clang-format --dry-run $files
 
+  ruff:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ruff
+        run: pipx install ruff
+
+      - name: Lint (ruff check)
+        run: ruff check .
+
+      - name: Check formatting (ruff format)
+        run: ruff format --check .
+
   coverage:
     name: ubuntu-latest (coverage)
     runs-on: ubuntu-latest
