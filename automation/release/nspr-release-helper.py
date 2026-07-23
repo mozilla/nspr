@@ -6,9 +6,6 @@
 
 import os
 import sys
-import datetime
-import shutil
-import glob
 from optparse import OptionParser
 from subprocess import check_call
 
