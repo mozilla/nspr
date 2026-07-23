@@ -1,4 +1,3 @@
-syntax: glob
 *~
 *OPT.OBJ/*
 *DBG.OBJ/*
