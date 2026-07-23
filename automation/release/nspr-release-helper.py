@@ -35,7 +35,7 @@ def exit_with_failure(what):
 
 def check_files_exist():
     if (not os.path.exists(prinit_h)):
-        exit_with_failure("cannot find expected header files, must run from inside NSPR hg directory")
+        exit_with_failure("cannot find expected header files, must run from inside NSPR git directory")
 
 def sed_inplace(sed_expression, filename):
     backup_file = filename + '.tmp'
@@ -53,7 +53,7 @@ def toggle_beta_status(is_beta):
         print("removing Beta status from version numbers")
         sed_inplace('s/^\\(#define *PR_VERSION *\"[0-9.]\\+\\) *Beta\" *$/\\1\"/', prinit_h)
         sed_inplace('s/^\\(#define *PR_BETA *\\)PR_TRUE *$/\\1PR_FALSE/', prinit_h)
-    print("please run 'hg stat' and 'hg diff' to verify the files have been verified correctly")
+    print("please run 'git status' and 'git diff' to verify the files have been verified correctly")
 
 def print_beta_versions():
     check_call_noisy(["egrep", "#define *PR_VERSION|#define *PR_BETA", prinit_h])
@@ -132,7 +132,7 @@ def set_version_to_patch_release():
     set_all_lib_versions(version, major, minor, patch)
 
 def create_nspr_release_archive():
-    ensure_arguments_after_action(2, "nspr_release_version  nspr_hg_release_tag")
+    ensure_arguments_after_action(2, "nspr_release_version  nspr_git_release_tag")
     nsprrel = args[1].strip() #e.g. 4.10.9
     nsprreltag = args[2].strip() #e.g. NSPR_4_10_9_RTM
 
@@ -142,8 +142,9 @@ def create_nspr_release_archive():
         exit_with_failure("nspr stage directory already exists: " + nspr_stagedir)
 
     check_call_noisy(["mkdir", "-p", nspr_stagedir])
-    check_call_noisy(["hg", "archive", "-r", nsprreltag, "--prefix=nspr-" + nsprrel + "/nspr",
-                      "../stage/v" + nsprrel + "/src/" + nspr_tar, "-X", ".hgtags"])
+    check_call_noisy(["git", "archive", "--format=tar.gz",
+                      "--prefix=nspr-" + nsprrel + "/nspr/",
+                      "-o", "../stage/v" + nsprrel + "/src/" + nspr_tar, nsprreltag])
     print("changing to directory " + nspr_stagedir)
     os.chdir(nspr_stagedir)
 
