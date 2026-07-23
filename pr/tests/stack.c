@@ -41,6 +41,7 @@ typedef struct stack_data {
     PRInt32 initial_data_value;
     PRInt32 data_cnt;
     PRInt32 loops;
+    void* items; /* backing array allocated by the worker, freed by main */
 } stack_data;
 
 static void stackop(void* arg);
@@ -178,6 +179,15 @@ main(int argc, char** argv)
         PR_ASSERT(node == NULL);
         PR_ProcessExit(4);
     }
+    /*
+     * All records have been popped and summed above, so the per-thread
+     * backing arrays are no longer referenced and can be freed.
+     */
+    for (cnt = 0; cnt < thread_cnt; cnt++) {
+        if (thread_args[cnt].items != NULL) {
+            PR_Free(thread_args[cnt].items);
+        }
+    }
     PR_DELETE(threads);
     PR_DELETE(thread_args);
 
@@ -216,6 +226,7 @@ stackop(void* thread_arg)
      */
     Items = (DataRecord*)PR_CALLOC(sizeof(DataRecord) * cnt);
     PR_ASSERT(Items != NULL);
+    arg->items = Items; /* hand ownership to main for cleanup after the join */
     index = 0;
 
     if (_debug_on)

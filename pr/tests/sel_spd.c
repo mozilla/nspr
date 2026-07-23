@@ -153,10 +153,17 @@ _server_thread(void* arg_id)
         goto done;
     }
 
-    /* Tell the client to start */
-    if (PR_CreateThread(PR_USER_THREAD, _client_thread, id, PR_PRIORITY_NORMAL,
-                        scope2, PR_UNJOINABLE_THREAD, 0) == NULL) {
-        fprintf(stderr, "Error creating client thread %d\n", *id);
+    /* Tell the client to start. Give it its own copy of the id so that the
+     * server and client threads can each free their own without racing. */
+    {
+        int* client_id = (int*)PR_Malloc(sizeof(int));
+        *client_id = *id;
+        if (PR_CreateThread(PR_USER_THREAD, _client_thread, client_id,
+                            PR_PRIORITY_NORMAL, scope2, PR_UNJOINABLE_THREAD,
+                            0) == NULL) {
+            fprintf(stderr, "Error creating client thread %d\n", *id);
+            PR_Free(client_id);
+        }
     }
 
     for (index = 0; index < _iterations; index++) {
@@ -231,6 +238,7 @@ done:
         PR_Close(sock);
     }
     _thread_exit(*id);
+    PR_Free(id);
     return;
 }
 
@@ -333,6 +341,7 @@ done:
         PR_Free(data_buffer);
     }
     _thread_exit(*id);
+    PR_Free(id);
 
     return;
 }
