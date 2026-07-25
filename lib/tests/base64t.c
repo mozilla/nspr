@@ -2284,8 +2284,11 @@ test_008(void)
         if (0 != PL_strcmp(rv, array[i].cyphertext)) {
             printf("FAIL\n\t(%d, \"%s\"): expected \n\"%s,\" got \n\"%s.\"\n", i,
                    array[i].plaintext, array[i].cyphertext, rv);
+            PR_DELETE(rv);
             return PR_FALSE;
         }
+
+        PR_DELETE(rv);
     }
 
     printf("PASS\n");
@@ -2959,8 +2962,11 @@ test_022(void)
         if (0 != PL_strcmp(rv, array[i].plaintext)) {
             printf("FAIL\n\t(%d, \"%s\"): expected \n\"%s,\" got \n\"%s.\"\n", i,
                    array[i].cyphertext, array[i].plaintext, rv);
+            PR_DELETE(rv);
             return PR_FALSE;
         }
+
+        PR_DELETE(rv);
     }
 
     printf("PASS\n");
@@ -3026,8 +3032,11 @@ test_024(void)
         if (0 != PL_strcmp(rv, array[i].cyphertext)) {
             printf("FAIL\n\t(%d, \"%s\"): expected \n\"%s,\" got \n\"%s.\"\n", i,
                    array[i].plaintext, array[i].cyphertext, rv);
+            PR_DELETE(rv);
             return PR_FALSE;
         }
+
+        PR_DELETE(rv);
     }
 
     printf("PASS\n");
@@ -3206,8 +3215,11 @@ test_028(void)
         if (0 != PL_strcmp(rv, array[i].plaintext)) {
             printf("FAIL\n\t(%d, \"%s\"): expected \n\"%s,\" got \n\"%s.\"\n", i,
                    array[i].cyphertext, array[i].plaintext, rv);
+            PR_DELETE(rv);
             return PR_FALSE;
         }
+
+        PR_DELETE(rv);
     }
 
     printf("PASS\n");
