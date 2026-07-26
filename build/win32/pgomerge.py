@@ -8,13 +8,13 @@
 # $PWD/$basename.pgd using pgomgr, then deletes them.
 # No errors if any of these files don't exist.
 
-import sys
 import os
 import os.path
 import subprocess
+import sys
 
 if not sys.platform == "win32":
-    raise Exception("This script was only meant for Windows.")
+    raise RuntimeError("This script was only meant for Windows.")
 
 
 def MergePGOFiles(basename, pgddir, pgcdir):
