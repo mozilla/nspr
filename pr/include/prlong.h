@@ -43,19 +43,19 @@ LL_MaxUint(void);
 #define LL_MININT (-LL_MAXINT - 1L)
 #define LL_ZERO 0L
 #define LL_MAXUINT 18446744073709551615UL
-#define LL_INIT(hi, lo) ((hi##L << 32) + lo##L)
+#define LL_INIT(hi, lo) ((PRInt64)(((PRUint64)(hi##UL) << 32) + (lo##UL)))
 #elif defined(WIN32) && !defined(__GNUC__)
 #define LL_MAXINT 9223372036854775807i64
 #define LL_MININT (-LL_MAXINT - 1i64)
 #define LL_ZERO 0i64
 #define LL_MAXUINT 18446744073709551615ui64
-#define LL_INIT(hi, lo) ((hi##i64 << 32) + lo##i64)
+#define LL_INIT(hi, lo) ((PRInt64)(((PRUint64)(hi##ui64) << 32) + (lo##ui64)))
 #else
 #define LL_MAXINT 9223372036854775807LL
 #define LL_MININT (-LL_MAXINT - 1LL)
 #define LL_ZERO 0LL
 #define LL_MAXUINT 18446744073709551615ULL
-#define LL_INIT(hi, lo) ((hi##LL << 32) + lo##LL)
+#define LL_INIT(hi, lo) ((PRInt64)(((PRUint64)(hi##ULL) << 32) + (lo##ULL)))
 #endif
 
 /***********************************************************************
@@ -104,7 +104,12 @@ LL_MaxUint(void);
 **  LL_ADD            Summation (two's complement)
 **  LL_SUB            Difference (two's complement)
 ***********************************************************************/
-#define LL_NEG(r, a) ((r) = -(a))
+/*
+ * Negate as unsigned so that negating the most-negative value is
+ * well-defined (negating it as signed is undefined behavior and trips
+ * -fsanitize=undefined). The two's-complement result is unchanged.
+ */
+#define LL_NEG(r, a) ((r) = (PRInt64)(-(PRUint64)(a)))
 #define LL_ADD(r, a, b) ((r) = (a) + (b))
 #define LL_SUB(r, a, b) ((r) = (a) - (b))
 
@@ -127,10 +132,15 @@ LL_MaxUint(void);
 **  LL_USHR           Unsigned shift right [0..64] bits
 **  LL_ISHL           Signed shift left [0..64] bits
 ***********************************************************************/
-#define LL_SHL(r, a, b) ((r) = (PRInt64)(a) << (b))
+/*
+ * Shift the value as unsigned to keep the left shift well-defined: shifting
+ * a negative value (or into the sign bit) is undefined behavior in C, and
+ * trips -fsanitize=undefined. The two's-complement result is unchanged.
+ */
+#define LL_SHL(r, a, b) ((r) = (PRInt64)((PRUint64)(a) << (b)))
 #define LL_SHR(r, a, b) ((r) = (PRInt64)(a) >> (b))
 #define LL_USHR(r, a, b) ((r) = (PRUint64)(a) >> (b))
-#define LL_ISHL(r, a, b) ((r) = (PRInt64)(a) << (b))
+#define LL_ISHL(r, a, b) ((r) = (PRInt64)((PRUint64)(a) << (b)))
 
 /***********************************************************************
 ** MACROS:      LL_<conversion operators>

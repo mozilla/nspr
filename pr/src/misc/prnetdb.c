@@ -2361,35 +2361,43 @@ PR_GetPrefLoopbackAddrInfo(PRNetAddr* result, PRUint16 port)
     rv = GETADDRINFO(NULL, tmpBuf, &hints, &res);
     if (rv == 0) {
         PRBool result_still_empty = PR_TRUE;
-        PRADDRINFO* ai = res;
-        do {
+        PRADDRINFO* ai;
+
+        for (ai = res; ai != NULL; ai = ai->ai_next) {
             PRNetAddr aNetAddr;
 
-            while (ai && ai->ai_addrlen > sizeof(PRNetAddr))
-                ai = ai->ai_next;
-
-            if (ai) {
-                /* copy sockaddr to PRNetAddr */
-                memcpy(&aNetAddr, ai->ai_addr, ai->ai_addrlen);
-                aNetAddr.raw.family = ai->ai_addr->sa_family;
-#ifdef _PR_INET6
-                if (AF_INET6 == aNetAddr.raw.family)
-                    aNetAddr.raw.family = PR_AF_INET6;
-#endif
-                if (ai->ai_addrlen < sizeof(PRNetAddr))
-                    memset(((char*)result) + ai->ai_addrlen, 0,
-                           sizeof(PRNetAddr) - ai->ai_addrlen);
+            /* Skip anything that doesn't fit in a PRNetAddr. */
+            if (ai->ai_addrlen > sizeof(PRNetAddr)) {
+                continue;
             }
+
+            /*
+             * Copy sockaddr to PRNetAddr, zero-filling the tail: the
+             * sockaddr is usually much smaller than a PRNetAddr, and the
+             * remaining bytes must not be left uninitialized.
+             */
+            memset(&aNetAddr, 0, sizeof(aNetAddr));
+            memcpy(&aNetAddr, ai->ai_addr, ai->ai_addrlen);
+            aNetAddr.raw.family = ai->ai_addr->sa_family;
+#ifdef _PR_INET6
+            if (AF_INET6 == aNetAddr.raw.family) {
+                aNetAddr.raw.family = PR_AF_INET6;
+            }
+#endif
 
             /* If we obtain more than one result, prefer IPv6. */
             if (result_still_empty || aNetAddr.raw.family == PR_AF_INET6) {
                 memcpy(result, &aNetAddr, sizeof(PRNetAddr));
+                result_still_empty = PR_FALSE;
             }
-            result_still_empty = PR_FALSE;
-            ai = ai->ai_next;
-        } while (ai);
+        }
 
         FREEADDRINFO(res);
+
+        if (result_still_empty) {
+            PR_SetError(PR_ADDRESS_NOT_SUPPORTED_ERROR, 0);
+            return PR_FAILURE;
+        }
         return PR_SUCCESS;
     }
 
