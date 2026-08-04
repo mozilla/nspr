@@ -33,6 +33,15 @@ main(int argc, char** argv)
     memset(&addr, 0xAB, sizeof(addr));
 
     if (PR_GetPrefLoopbackAddrInfo(&addr, TEST_PORT) != PR_SUCCESS) {
+        /*
+         * PR_GetPrefLoopbackAddrInfo is a stub on platforms built without
+         * getaddrinfo() or AI_PASSIVE -- Windows, where the md headers only
+         * pull in Winsock 1's <winsock.h>. Nothing to test there.
+         */
+        if (PR_GetError() == PR_NOT_IMPLEMENTED_ERROR) {
+            printf("PR_GetPrefLoopbackAddrInfo not implemented, skipping\n");
+            return 0;
+        }
         fprintf(stderr, "PR_GetPrefLoopbackAddrInfo failed: (%d, %d)\n",
                 PR_GetError(), PR_GetOSError());
         return 1;
