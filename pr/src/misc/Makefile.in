@@ -35,7 +35,6 @@ CSRCS = \
 	prtime.c   \
 	prthinfo.c \
 	prtpool.c \
-	prtrace.c  \
 	$(NULL)
 
 ifndef USE_PTHREADS

@@ -77,7 +77,6 @@ EXPORTS ;-
 		PR_CreateStack;
 		PR_CreateThread;
 		PR_CreateThreadGCAble;
-		PR_CreateTrace;
 		PR_CreateThreadPool;
 		PR_DecrementCounter;
 		PR_CreateWaitGroup;
@@ -95,7 +94,6 @@ EXPORTS ;-
 		PR_DestroyRWLock;
 		PR_DestroySem;
 		PR_DestroySocketPollFd;
-		PR_DestroyTrace;
 		PR_DestroyStack;
 		PR_DestroyWaitGroup;
 		PR_DetachProcess;
@@ -129,8 +127,6 @@ EXPORTS ;-
 		PR_FormatTime;
 		PR_FindNextCounterQname;
 		PR_FindNextCounterRname;
-		PR_FindNextTraceQname;
-		PR_FindNextTraceRname;
 		PR_FormatTimeUSEnglish;
 		PR_Free;
 		PR_FreeLibraryName;
@@ -195,10 +191,6 @@ EXPORTS ;-
 		PR_ImportFileMapFromString;
 		PR_ImportTCPSocket;
 		PR_ImportUDPSocket;
-		PR_GetTraceEntries;
-		PR_GetTraceHandleFromName;
-		PR_GetTraceNameFromHandle;
-		PR_GetTraceOption;
 		PR_Init;
 		PR_Initialize;
 		PR_InitializeNetAddr;
@@ -289,7 +281,6 @@ EXPORTS ;-
 		PR_ResumeAll;
 		PR_RmDir;
 		PR_ScanStackPointers;
-		PR_RecordTraceEntries;
 		PR_SecondsToInterval;
 		PR_Seek;
 		PR_Seek64;
@@ -330,7 +321,6 @@ EXPORTS ;-
 		PR_Sync;
 		PR_TLockFile;
 		PR_ThreadScanStackPointers;
-		PR_SetTraceOption;
 		PR_TicksPerSecond;
 		PR_TransmitFile;
 		PR_USPacificTimeParameters;
@@ -344,7 +334,6 @@ EXPORTS ;-
 		PR_Wait;
 		PR_WaitCondVar;
 		PR_WaitForPollableEvent;
-		PR_Trace;
 		PR_WaitProcess;
 		PR_WaitRecvReady;
 		PR_WaitSem;
