@@ -94,7 +94,6 @@ typedef struct _MDCVar _MDCVar;
 typedef struct _MDSegment _MDSegment;
 typedef struct _MDThread _MDThread;
 typedef struct _MDThreadStack _MDThreadStack;
-typedef struct _MDSemaphore _MDSemaphore;
 typedef struct _MDDir _MDDir;
 #ifdef MOZ_UNICODE
 typedef struct _MDDirUTF16 _MDDirUTF16;
@@ -858,29 +857,6 @@ _PR_MD_IOQ_UNLOCK(void);
 #define _PR_MD_IOQ_UNLOCK _MD_IOQ_UNLOCK
 
 #ifndef _PR_LOCAL_THREADS_ONLY /* not if only local threads supported */
-/* Semaphore related -- only for native threads */
-#ifdef HAVE_CVAR_BUILT_ON_SEM
-NSPR_API(void)
-_PR_MD_NEW_SEM(_MDSemaphore* md, PRUintn value);
-#define _PR_MD_NEW_SEM _MD_NEW_SEM
-
-NSPR_API(void)
-_PR_MD_DESTROY_SEM(_MDSemaphore* md);
-#define _PR_MD_DESTROY_SEM _MD_DESTROY_SEM
-
-NSPR_API(PRStatus)
-_PR_MD_TIMED_WAIT_SEM(_MDSemaphore* md, PRIntervalTime timeout);
-#define _PR_MD_TIMED_WAIT_SEM _MD_TIMED_WAIT_SEM
-
-NSPR_API(PRStatus)
-_PR_MD_WAIT_SEM(_MDSemaphore* md);
-#define _PR_MD_WAIT_SEM _MD_WAIT_SEM
-
-NSPR_API(void)
-_PR_MD_POST_SEM(_MDSemaphore* md);
-#define _PR_MD_POST_SEM _MD_POST_SEM
-#endif /* HAVE_CVAR_BUILT_ON_SEM */
-
 #endif
 
 /* Condition Variables related -- only for native threads */

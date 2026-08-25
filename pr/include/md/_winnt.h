@@ -193,10 +193,6 @@ struct _MDCVar {
     PRUint32 unused;
 };
 
-struct _MDSemaphore {
-    HANDLE sem;
-};
-
 struct _MDFileDesc {
     PROsfd osfd;               /* The osfd can come from one of three spaces:
                                 * - For stdin, stdout, and stderr, we are using
