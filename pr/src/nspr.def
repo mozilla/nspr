@@ -69,7 +69,6 @@ EXPORTS ;-
 		PR_CreateAlarm;
 		PR_CreateFileMap;
 		PR_CreateIOLayerStub;
-		PR_CreateOrderedLock;
 		PR_CreateMWaitEnumerator;
 		PR_CreatePipe;
 		PR_CreateProcess;
@@ -90,7 +89,6 @@ EXPORTS ;-
 		PR_DestroyCondVar;
 		PR_DestroyLock;
 		PR_DestroyMWaitEnumerator;
-		PR_DestroyOrderedLock;
 		PR_DestroyMonitor;
 		PR_DestroyPollableEvent;
 		PR_DestroyProcessAttr;
@@ -231,7 +229,6 @@ EXPORTS ;-
 		PR_MemUnmap;
 		PR_MicrosecondsToInterval;
 		PR_MillisecondsToInterval;
-		PR_LockOrderedLock;
 		PR_MkDir;
 		PR_NetAddrToString;
 		PR_NewCondVar;
@@ -355,7 +352,6 @@ EXPORTS ;-
 		PR_Write;
 		PR_Writev;
 		PR_Yield;
-		PR_UnlockOrderedLock;
 		PR_cnvtf;
 		PR_dtoa;
 		PR_fprintf;

@@ -5,9 +5,9 @@
 /*
 ** File:    instrumt.c
 ** Description: This test is for the NSPR debug aids defined in
-** prcountr.h, prtrace.h, prolock.h
+** prcountr.h, prtrace.h
 **
-** The test case tests the three debug aids in NSPR:
+** The test case tests the two debug aids in NSPR:
 **
 ** Diagnostic messages can be enabled using "instrumt -v 6"
 ** This sets the msgLevel to something that PR_LOG() likes.
@@ -26,12 +26,6 @@
 ** A thread to extract trace entries on the fly is started.
 ** A thread to dump trace entries to a file is started.
 **
-** OrderedLockTest():
-**
-**
-**
-**
-**
 */
 
 #include <stdio.h>
@@ -44,7 +38,6 @@
 #include <pratom.h>
 #include <prtrace.h>
 #include <prcountr.h>
-#include <prolock.h>
 
 #define COUNT_LIMIT (10 * (1024))
 
@@ -354,16 +347,6 @@ TraceTest(void)
     return;
 } /* end TraceTest() */
 
-/*
-** Ordered lock test.
-*/
-static void
-OrderedLockTest(void)
-{
-    PR_LOG(lm, msgLevel, ("Begin OrderedLockTest"));
-
-} /* end OrderedLockTest() */
-
 int
 main(int argc, char** argv)
 {
@@ -398,7 +381,6 @@ main(int argc, char** argv)
 
     TraceTest();
     CounterTest();
-    OrderedLockTest();
 
     /* Wait for all threads to exit */
     while (activeThreads > 0) {
