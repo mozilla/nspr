@@ -115,8 +115,7 @@ struct _MDCPU {
     int unused;
 };
 
-enum _MDIOModel { _MD_BlockingIO = 0x38,
-                  _MD_MultiWaitIO = 0x49 };
+enum _MDIOModel { _MD_BlockingIO = 0x38 };
 
 typedef struct _MDOverlapped {
     OVERLAPPED overlapped; /* Used for async I/O */
@@ -129,16 +128,6 @@ typedef struct _MDOverlapped {
                                      * is embedded in the _MDThread
                                      * structure.
                                      */
-        struct {
-            PRCList links;           /* for group->io_ready list */
-            struct PRRecvWait* desc; /* For multiwait I/O, this structure
-                                      * is associated with a PRRecvWait
-                                      * structure.
-                                      */
-            struct PRWaitGroup* group;
-            struct TimerEvent* timer;
-            DWORD error;
-        } mw;
     } data;
 } _MDOverlapped;
 

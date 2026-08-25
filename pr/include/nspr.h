@@ -23,7 +23,6 @@
 #include "prlong.h"
 #include "prmem.h"
 #include "prmon.h"
-#include "prmwait.h"
 #include "prnetdb.h"
 #include "prprf.h"
 #include "prproces.h"

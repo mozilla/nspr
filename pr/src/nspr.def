@@ -27,7 +27,6 @@ EXPORTS ;-
 		PR_Accept;
 		PR_AcceptRead;
 		PR_Access;
-		PR_AddWaitFileDesc;
 		PR_AllocFileDesc;
 		PR_Assert;
 		PR_AtomicAdd;
@@ -49,8 +48,6 @@ EXPORTS ;-
 		PR_CWait;
 		PR_CallOnce;
 		PR_Calloc;
-		PR_CancelWaitFileDesc;
-		PR_CancelWaitGroup;
 		PR_CeilingLog2;
 		PR_ChangeFileDescNativeHandle;
 		PR_Cleanup;
@@ -64,7 +61,6 @@ EXPORTS ;-
 		PR_ConvertIPv4AddrToIPv6;
 		PR_CreateFileMap;
 		PR_CreateIOLayerStub;
-		PR_CreateMWaitEnumerator;
 		PR_CreatePipe;
 		PR_CreateProcess;
 		PR_CreateProcessDetached;
@@ -72,19 +68,16 @@ EXPORTS ;-
 		PR_CreateStack;
 		PR_CreateThread;
 		PR_CreateThreadGCAble;
-		PR_CreateWaitGroup;
 		PR_Delete;
 		PR_DeleteSharedMemory;
 		PR_DestroyCondVar;
 		PR_DestroyLock;
-		PR_DestroyMWaitEnumerator;
 		PR_DestroyMonitor;
 		PR_DestroyProcessAttr;
 		PR_DestroyRWLock;
 		PR_DestroySem;
 		PR_DestroySocketPollFd;
 		PR_DestroyStack;
-		PR_DestroyWaitGroup;
 		PR_DetachProcess;
 		PR_DetachSharedMemory;
 		PR_DetachThread;
@@ -93,7 +86,6 @@ EXPORTS ;-
 		PR_EnterMonitor;
 		PR_EnumerateHostEnt;
 		PR_EnumerateThreads;
-		PR_EnumerateWaitGroup;
 		PR_ErrorInstallCallback;
 		PR_ErrorInstallTable;
 		PR_ErrorLanguages;
@@ -295,7 +287,6 @@ EXPORTS ;-
 		PR_Wait;
 		PR_WaitCondVar;
 		PR_WaitProcess;
-		PR_WaitRecvReady;
 		PR_WaitSem;
 		PR_Write;
 		PR_Writev;

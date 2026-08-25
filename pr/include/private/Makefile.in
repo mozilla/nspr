@@ -19,7 +19,7 @@ RELEASE_HEADERS = pprio.h pprthred.h prpriv.h
 RELEASE_HEADERS := $(addprefix $(srcdir)/, $(RELEASE_HEADERS))
 RELEASE_HEADERS_DEST = $(RELEASE_INCLUDE_DIR)/private
 
-HEADERS = $(RELEASE_HEADERS) $(srcdir)/pprmwait.h $(srcdir)/primpl.h
+HEADERS = $(RELEASE_HEADERS) $(srcdir)/primpl.h
 
 include_subdir = private
 

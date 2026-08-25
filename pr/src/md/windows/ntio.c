@@ -21,7 +21,6 @@
  */
 
 #include "primpl.h"
-#include "pprmwait.h"
 #include <direct.h>
 #include <mbstring.h>
 
@@ -211,6 +210,7 @@ _PR_MD_PAUSE_CPU(PRIntervalTime ticks)
     int rv;
     LPOVERLAPPED olp;
     _MDOverlapped* mdOlp;
+    PRThread* completed_io;
     PRUint32 timeout;
 
     if (_nt_idleCount > 0) {
@@ -286,157 +286,93 @@ _PR_MD_PAUSE_CPU(PRIntervalTime ticks)
 
         mdOlp = (_MDOverlapped*)olp;
 
-        if (mdOlp->ioModel == _MD_MultiWaitIO) {
-            PRRecvWait* desc;
-            PRWaitGroup* group;
-            PRThread* thred = NULL;
-            PRMWStatus mwstatus;
+        PR_ASSERT(mdOlp->ioModel == _MD_BlockingIO);
+        completed_io = _PR_THREAD_MD_TO_PTR(mdOlp->data.mdThread);
+        completed_io->md.blocked_io_status = rv;
+        if (rv == 0) {
+            completed_io->md.blocked_io_error = GetLastError();
+        }
+        completed_io->md.blocked_io_bytes = bytes;
 
-            desc = mdOlp->data.mw.desc;
-            PR_ASSERT(desc != NULL);
-            mwstatus = rv ? PR_MW_SUCCESS : PR_MW_FAILURE;
-            if (InterlockedCompareExchange((PVOID*)&desc->outcome, (PVOID)mwstatus,
-                                           (PVOID)PR_MW_PENDING) ==
-                (PVOID)PR_MW_PENDING) {
-                if (mwstatus == PR_MW_SUCCESS) {
-                    desc->bytesRecv = bytes;
-                } else {
-                    mdOlp->data.mw.error = GetLastError();
-                }
-            }
-            group = mdOlp->data.mw.group;
-            PR_ASSERT(group != NULL);
+        if (!_PR_IS_NATIVE_THREAD(completed_io)) {
+            int pri = completed_io->priority;
+            _PRCPU* lockedCPU = _PR_MD_CURRENT_CPU();
 
-            _PR_MD_LOCK(&group->mdlock);
-            PR_APPEND_LINK(&mdOlp->data.mw.links, &group->io_ready);
-            PR_ASSERT(desc->fd != NULL);
-            NT_HashRemoveInternal(group, desc->fd);
-            if (!PR_CLIST_IS_EMPTY(&group->wait_list)) {
-                thred = _PR_THREAD_CONDQ_PTR(PR_LIST_HEAD(&group->wait_list));
-                PR_REMOVE_LINK(&thred->waitQLinks);
-            }
-            _PR_MD_UNLOCK(&group->mdlock);
+            /* The KEY_CVAR notification only occurs when a native thread
+             * is notifying a user thread.  For user-user notifications
+             * the wakeup occurs by having the notifier place the thread
+             * on the runq directly; for native-native notifications the
+             * wakeup occurs by calling ReleaseSemaphore.
+             */
+            if (key == KEY_CVAR) {
+                PR_ASSERT(completed_io->io_pending == PR_FALSE);
+                PR_ASSERT(completed_io->io_suspended == PR_FALSE);
+                PR_ASSERT(completed_io->md.thr_bound_cpu == NULL);
 
-            if (thred) {
-                if (!_PR_IS_NATIVE_THREAD(thred)) {
-                    int pri = thred->priority;
-                    _PRCPU* lockedCPU = _PR_MD_CURRENT_CPU();
-                    _PR_THREAD_LOCK(thred);
-                    if (thred->flags & _PR_ON_PAUSEQ) {
-                        _PR_SLEEPQ_LOCK(thred->cpu);
-                        _PR_DEL_SLEEPQ(thred, PR_TRUE);
-                        _PR_SLEEPQ_UNLOCK(thred->cpu);
-                        _PR_THREAD_UNLOCK(thred);
-                        thred->cpu = lockedCPU;
-                        thred->state = _PR_RUNNABLE;
-                        _PR_RUNQ_LOCK(lockedCPU);
-                        _PR_ADD_RUNQ(thred, lockedCPU, pri);
-                        _PR_RUNQ_UNLOCK(lockedCPU);
-                    } else {
-                        /*
-                         * The thread was just interrupted and moved
-                         * from the pause queue to the run queue.
-                         */
-                        _PR_THREAD_UNLOCK(thred);
-                    }
-                } else {
-                    _PR_THREAD_LOCK(thred);
-                    thred->state = _PR_RUNNABLE;
-                    _PR_THREAD_UNLOCK(thred);
-                    ReleaseSemaphore(thred->md.blocked_sema, 1, NULL);
-                }
-            }
-        } else {
-            PRThread* completed_io;
+                /* Thread has already been deleted from sleepQ */
 
-            PR_ASSERT(mdOlp->ioModel == _MD_BlockingIO);
-            completed_io = _PR_THREAD_MD_TO_PTR(mdOlp->data.mdThread);
-            completed_io->md.blocked_io_status = rv;
-            if (rv == 0) {
-                completed_io->md.blocked_io_error = GetLastError();
-            }
-            completed_io->md.blocked_io_bytes = bytes;
+                /* Switch CPU and add to runQ */
+                completed_io->cpu = lockedCPU;
+                completed_io->state = _PR_RUNNABLE;
+                _PR_RUNQ_LOCK(lockedCPU);
+                _PR_ADD_RUNQ(completed_io, lockedCPU, pri);
+                _PR_RUNQ_UNLOCK(lockedCPU);
+            } else {
+                PR_ASSERT(key == KEY_IO);
+                PR_ASSERT(completed_io->io_pending == PR_TRUE);
 
-            if (!_PR_IS_NATIVE_THREAD(completed_io)) {
-                int pri = completed_io->priority;
-                _PRCPU* lockedCPU = _PR_MD_CURRENT_CPU();
+                _PR_THREAD_LOCK(completed_io);
 
-                /* The KEY_CVAR notification only occurs when a native thread
-                 * is notifying a user thread.  For user-user notifications
-                 * the wakeup occurs by having the notifier place the thread
-                 * on the runq directly; for native-native notifications the
-                 * wakeup occurs by calling ReleaseSemaphore.
+                completed_io->io_pending = PR_FALSE;
+
+                /* If io_suspended is true, then this IO has already resumed.
+                 * We don't need to do anything; because the thread is
+                 * already running.
                  */
-                if (key == KEY_CVAR) {
-                    PR_ASSERT(completed_io->io_pending == PR_FALSE);
-                    PR_ASSERT(completed_io->io_suspended == PR_FALSE);
-                    PR_ASSERT(completed_io->md.thr_bound_cpu == NULL);
+                if (completed_io->io_suspended == PR_FALSE) {
+                    if (completed_io->flags & (_PR_ON_SLEEPQ | _PR_ON_PAUSEQ)) {
+                        _PR_SLEEPQ_LOCK(completed_io->cpu);
+                        _PR_DEL_SLEEPQ(completed_io, PR_TRUE);
+                        _PR_SLEEPQ_UNLOCK(completed_io->cpu);
 
-                    /* Thread has already been deleted from sleepQ */
+                        _PR_THREAD_UNLOCK(completed_io);
 
-                    /* Switch CPU and add to runQ */
-                    completed_io->cpu = lockedCPU;
-                    completed_io->state = _PR_RUNNABLE;
-                    _PR_RUNQ_LOCK(lockedCPU);
-                    _PR_ADD_RUNQ(completed_io, lockedCPU, pri);
-                    _PR_RUNQ_UNLOCK(lockedCPU);
-                } else {
-                    PR_ASSERT(key == KEY_IO);
-                    PR_ASSERT(completed_io->io_pending == PR_TRUE);
+                        /*
+                         * If an I/O operation is suspended, the thread
+                         * must be running on the same cpu on which the
+                         * I/O operation was issued.
+                         */
+                        PR_ASSERT(!completed_io->md.thr_bound_cpu ||
+                                  (completed_io->cpu == completed_io->md.thr_bound_cpu));
 
-                    _PR_THREAD_LOCK(completed_io);
-
-                    completed_io->io_pending = PR_FALSE;
-
-                    /* If io_suspended is true, then this IO has already resumed.
-                     * We don't need to do anything; because the thread is
-                     * already running.
-                     */
-                    if (completed_io->io_suspended == PR_FALSE) {
-                        if (completed_io->flags & (_PR_ON_SLEEPQ | _PR_ON_PAUSEQ)) {
-                            _PR_SLEEPQ_LOCK(completed_io->cpu);
-                            _PR_DEL_SLEEPQ(completed_io, PR_TRUE);
-                            _PR_SLEEPQ_UNLOCK(completed_io->cpu);
-
-                            _PR_THREAD_UNLOCK(completed_io);
-
-                            /*
-                             * If an I/O operation is suspended, the thread
-                             * must be running on the same cpu on which the
-                             * I/O operation was issued.
-                             */
-                            PR_ASSERT(!completed_io->md.thr_bound_cpu ||
-                                      (completed_io->cpu == completed_io->md.thr_bound_cpu));
-
-                            if (!completed_io->md.thr_bound_cpu) {
-                                completed_io->cpu = lockedCPU;
-                            }
-                            completed_io->state = _PR_RUNNABLE;
-                            _PR_RUNQ_LOCK(completed_io->cpu);
-                            _PR_ADD_RUNQ(completed_io, completed_io->cpu, pri);
-                            _PR_RUNQ_UNLOCK(completed_io->cpu);
-                        } else {
-                            _PR_THREAD_UNLOCK(completed_io);
+                        if (!completed_io->md.thr_bound_cpu) {
+                            completed_io->cpu = lockedCPU;
                         }
+                        completed_io->state = _PR_RUNNABLE;
+                        _PR_RUNQ_LOCK(completed_io->cpu);
+                        _PR_ADD_RUNQ(completed_io, completed_io->cpu, pri);
+                        _PR_RUNQ_UNLOCK(completed_io->cpu);
                     } else {
                         _PR_THREAD_UNLOCK(completed_io);
                     }
-                }
-            } else {
-                /* For native threads, they are only notified through this loop
-                 * when completing IO.  So, don't worry about this being a CVAR
-                 * notification, because that is not possible.
-                 */
-                _PR_THREAD_LOCK(completed_io);
-                completed_io->io_pending = PR_FALSE;
-                if (completed_io->io_suspended == PR_FALSE) {
-                    completed_io->state = _PR_RUNNABLE;
-                    _PR_THREAD_UNLOCK(completed_io);
-                    rv = ReleaseSemaphore(completed_io->md.blocked_sema, 1, NULL);
-                    PR_ASSERT(0 != rv);
                 } else {
                     _PR_THREAD_UNLOCK(completed_io);
                 }
+            }
+        } else {
+            /* For native threads, they are only notified through this loop
+             * when completing IO.  So, don't worry about this being a CVAR
+             * notification, because that is not possible.
+             */
+            _PR_THREAD_LOCK(completed_io);
+            completed_io->io_pending = PR_FALSE;
+            if (completed_io->io_suspended == PR_FALSE) {
+                completed_io->state = _PR_RUNNABLE;
+                _PR_THREAD_UNLOCK(completed_io);
+                rv = ReleaseSemaphore(completed_io->md.blocked_sema, 1, NULL);
+                PR_ASSERT(0 != rv);
+            } else {
+                _PR_THREAD_UNLOCK(completed_io);
             }
         }
 

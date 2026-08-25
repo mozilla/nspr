@@ -1063,7 +1063,6 @@ PR_Cleanup(void)
 
         _PR_MD_EARLY_CLEANUP();
 
-        _PR_CleanupMW();
         _PR_CleanupTime();
         _PR_CleanupDtoa();
         _PR_CleanupCallOnce();

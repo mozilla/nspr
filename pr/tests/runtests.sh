@@ -68,7 +68,6 @@ fi
 #
 
 #forktest (failed on IRIX)
-#multiwait - fails on Linux 64bit since NSPR v 4.4 from 2004.
 #nbconn - fails on some platforms
 #poll_er - fails on some platforms? limited use?
 #prpoll -  the bad-FD test needs to be moved to a different test

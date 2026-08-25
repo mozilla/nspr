@@ -154,9 +154,6 @@ makefile
 many_cv.c
 	Tests aquiring a large number of condition variables.
 
-multiwait.c
-	???
-
 nbconn.c
 	Test non-blocking connect.
 
