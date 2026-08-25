@@ -97,14 +97,15 @@ _PR_SocketGetSocketOption(PRFileDesc* fd,
             }
             case PR_SockOpt_McastLoopback: {
 #ifdef WIN32 /* Winsock */
-                BOOL bool;
+                BOOL loopback;
 #else
-                PRUint8 bool;
+                PRUint8 loopback;
 #endif
-                length = sizeof(bool);
-                rv = _PR_MD_GETSOCKOPT(fd, level, name, (char*)&bool, &length);
+                length = sizeof(loopback);
+                rv = _PR_MD_GETSOCKOPT(fd, level, name, (char*)&loopback, &length);
                 if (PR_SUCCESS == rv) {
-                    data->value.mcast_loopback = (0 == bool) ? PR_FALSE : PR_TRUE;
+                    data->value.mcast_loopback =
+                        (0 == loopback) ? PR_FALSE : PR_TRUE;
                 }
                 break;
             }
@@ -247,12 +248,13 @@ _PR_SocketSetSocketOption(PRFileDesc* fd,
             }
             case PR_SockOpt_McastLoopback: {
 #ifdef WIN32 /* Winsock */
-                BOOL bool;
+                BOOL loopback;
 #else
-                PRUint8 bool;
+                PRUint8 loopback;
 #endif
-                bool = data->value.mcast_loopback ? 1 : 0;
-                rv = _PR_MD_SETSOCKOPT(fd, level, name, (char*)&bool, sizeof(bool));
+                loopback = data->value.mcast_loopback ? 1 : 0;
+                rv = _PR_MD_SETSOCKOPT(fd, level, name, (char*)&loopback,
+                                       sizeof(loopback));
                 break;
             }
             case PR_SockOpt_RecvBufferSize:
