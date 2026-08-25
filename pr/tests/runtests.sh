@@ -156,7 +156,6 @@ pipeping2
 pipeself
 poll_nm
 poll_to
-pollable
 prefloop
 prftest
 prfz

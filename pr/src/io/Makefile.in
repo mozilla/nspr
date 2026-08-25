@@ -23,7 +23,6 @@ CSRCS = \
     prlayer.c \
     prlog.c \
 	prmmap.c \
-    prpolevt.c \
 	prprf.c \
 	prscanf.c \
 	prstdio.c  \

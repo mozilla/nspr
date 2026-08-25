@@ -306,7 +306,6 @@ $prog = shift;  # Program to test
 "pipeself",
 "poll_nm",
 "poll_to",
-"pollable",
 "prftest",
 "prfz",
 "primblok",
