@@ -108,7 +108,6 @@ accept
 acceptread
 acceptreademu
 affinity
-alarm
 anonfm
 atomic
 attach
@@ -128,7 +127,6 @@ fsync
 i2l
 initclk
 inrval
-instrumt
 intrio
 intrupt
 io_timeout
