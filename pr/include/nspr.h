@@ -36,7 +36,6 @@
 #include "prthread.h"
 #include "prtime.h"
 #include "prtpool.h"
-#include "prtrace.h"
 #include "prtypes.h"
 
 #endif /* nspr_h___ */

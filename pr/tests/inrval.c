@@ -25,7 +25,6 @@
 #include "plgetopt.h"
 
 #include "prinit.h"
-#include "obsolete/pralarm.h"
 
 #include "prio.h"
 #include "prprf.h"

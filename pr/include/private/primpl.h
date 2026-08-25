@@ -1580,8 +1580,6 @@ struct PRThread {
     PRThreadStack* stack; /* info about thread's stack (for GC) */
     void* environment;    /* pointer to execution environment */
 
-    PRThreadDumpProc dump; /* dump thread info out */
-    void* dumpArg;         /* argument for the dump function */
 
     /*
     ** Per thread private data
