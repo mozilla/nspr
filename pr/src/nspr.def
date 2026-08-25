@@ -326,12 +326,6 @@ EXPORTS ;-
 		PR_vsnprintf;
 		PR_vsprintf_append;
 		PR_vsxprintf;
-		PRP_DestroyNakedCondVar;
-		PRP_NakedBroadcast;
-		PRP_NakedNotify;
-		PRP_NakedWait;
-		PRP_NewNakedCondVar;
-		PRP_TryLock;
 		libVersionPoint;
 ;+	local: *;
 ;+};

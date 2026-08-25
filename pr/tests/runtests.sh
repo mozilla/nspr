@@ -47,7 +47,6 @@ fi
 #dbmalloc	- obsolete; originally for testing debug version of nspr's malloc
 #dbmalloc1	- obsolete; originally for testing debug version of nspr's malloc
 #depend		- obsolete; used to test a initial spec for library dependencies
-#dceemu		- used to tests special functions in NSPR for DCE emulation
 #ipv6		- IPV6 not in use by NSPR clients
 #mbcs       - tests use of multi-byte charset for filenames. See BugZilla #25140
 #io_timeoutk - obsolete; subsumed in io_timeout

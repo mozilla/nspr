@@ -36,7 +36,6 @@ CSRCS =             \
 	concur.c	    \
 	cvar.c			\
 	cvar2.c			\
-	dceemu.c		\
 	dlltest.c		\
 	dtoa.c			\
 	env.c			\

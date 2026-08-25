@@ -57,9 +57,6 @@ dbmalloc.c
 dbmalloc1.c
 	Obsolete. Originally for testing debug builds of NSPR's malloc.
 
-dceemu.c
-	Tests special functions for DCE emulation.
-
 depend.c
 	Obsoltet. Tests early spec for library dependency.
 

@@ -62,7 +62,6 @@ f none usr/include/mps/prmem.h 0644 root bin
 f none usr/include/mps/prmon.h 0644 root bin
 f none usr/include/mps/prmwait.h 0644 root bin
 f none usr/include/mps/prnetdb.h 0644 root bin
-f none usr/include/mps/prpdce.h 0644 root bin
 f none usr/include/mps/prprf.h 0644 root bin
 f none usr/include/mps/prproces.h 0644 root bin
 f none usr/include/mps/prrng.h 0644 root bin
