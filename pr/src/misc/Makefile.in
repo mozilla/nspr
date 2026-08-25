@@ -15,9 +15,7 @@ include $(MOD_DEPTH)/config/autoconf.mk
 include $(topsrcdir)/config/config.mk
 
 CSRCS = \
-	pralarm.c  \
 	pratom.c   \
-	prcountr.c \
 	prdtoa.c   \
 	prenv.c    \
 	prerr.c  \
@@ -30,13 +28,10 @@ CSRCS = \
 	prlong.c   \
 	prnetdb.c  \
 	praton.c  \
-	prolock.c  \
 	prrng.c    \
 	prsystem.c \
 	prtime.c   \
-	prthinfo.c \
 	prtpool.c \
-	prtrace.c  \
 	$(NULL)
 
 ifndef USE_PTHREADS

@@ -22,9 +22,6 @@ accept.c
 acceptread.c
 	Tests PR_AcceptRead()
 
-alarm.c
-	Tests alarm functions declared in obsolete/pralarm.h.
-	The alarm functions are obsolete, so is this test.
 
 atomic.c
 	Tests Atomic operations defined in pratom.h
@@ -102,8 +99,6 @@ initclk.c
 inrval.c
 	Tests interval timing functions.
 
-instrumt.c
-	Tests instrumentation functions. prcountr.h prtrace.h
 
 intrupt.c
 	Tests PR_Interrupt()

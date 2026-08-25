@@ -1132,12 +1132,6 @@ PR_SetThreadAffinityMask(PRThread* thread, PRUint32 mask)
     return 0; /* not implemented */
 }
 
-PR_IMPLEMENT(void)
-PR_SetThreadDumpProc(PRThread* thread, PRThreadDumpProc dump, void* arg)
-{
-    thread->dump = dump;
-    thread->dumpArg = arg;
-}
 
 /*
  * Garbage collection support follows.

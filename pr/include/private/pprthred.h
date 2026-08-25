@@ -56,15 +56,6 @@ NSPR_API(PRUint32)
 PR_GetThreadID(PRThread* thread);
 
 /*
-** Set the procedure that is called when a thread is dumped. The procedure
-** will be applied to the argument, arg, when called. Setting the procedure
-** to NULL effectively removes it.
-*/
-typedef void (*PRThreadDumpProc)(PRFileDesc* fd, PRThread* t, void* arg);
-NSPR_API(void)
-PR_SetThreadDumpProc(PRThread* thread, PRThreadDumpProc dump, void* arg);
-
-/*
 ** Get this thread's affinity mask.  The affinity mask is a 32 bit quantity
 ** marking a bit for each processor this process is allowed to run on.
 ** The processor mask is returned in the mask argument.
@@ -89,12 +80,6 @@ PR_SetThreadAffinityMask(PRThread* thread, PRUint32 mask);
 */
 NSPR_API(PRInt32)
 PR_SetCPUAffinityMask(PRUint32 mask);
-
-/*
-** Show status of all threads to standard error output.
-*/
-NSPR_API(void)
-PR_ShowStatus(void);
 
 /*
 ** Set thread recycle mode to on (1) or off (0)
@@ -166,22 +151,6 @@ NSPR_API(void*)
 PR_GetSP(PRThread* thread);
 
 /*
-** Save the registers that the GC would find interesting into the thread
-** "t". isCurrent will be non-zero if the thread state that is being
-** saved is the currently executing thread. Return the address of the
-** first register to be scanned as well as the number of registers to
-** scan in "np".
-**
-** If "isCurrent" is non-zero then it is allowed for the thread context
-** area to be used as scratch storage to hold just the registers
-** necessary for scanning.
-**
-** This function simply calls the internal function _MD_HomeGCRegisters().
-*/
-NSPR_API(PRWord*)
-PR_GetGCRegisters(PRThread* t, int isCurrent, int* np);
-
-/*
 ** (Get|Set)ExecutionEnvironent
 **
 ** Used by Java to associate it's execution environment so garbage collector
@@ -204,38 +173,6 @@ SetExecutionEnvironment(PRThread* thread, void* environment);
 typedef PRStatus(PR_CALLBACK* PREnumerator)(PRThread* t, int i, void* arg);
 NSPR_API(PRStatus)
 PR_EnumerateThreads(PREnumerator func, void* arg);
-
-/*
-** Signature of a thread stack scanning function. It is applied to every
-** contiguous group of potential pointers within a thread. Count denotes the
-** number of pointers.
-*/
-typedef PRStatus(PR_CALLBACK* PRScanStackFun)(PRThread* t, void** baseAddr,
-                                              PRUword count, void* closure);
-
-/*
-** Applies scanFun to all contiguous groups of potential pointers
-** within a thread. This includes the stack, registers, and thread-local
-** data. If scanFun returns a status value other than PR_SUCCESS the scan
-** is aborted, and the status value is returned.
-*/
-NSPR_API(PRStatus)
-PR_ThreadScanStackPointers(PRThread* t, PRScanStackFun scanFun,
-                           void* scanClosure);
-
-/*
-** Calls PR_ThreadScanStackPointers for every thread.
-*/
-NSPR_API(PRStatus)
-PR_ScanStackPointers(PRScanStackFun scanFun, void* scanClosure);
-
-/*
-** Returns a conservative estimate on the amount of stack space left
-** on a thread in bytes, sufficient for making decisions about whether
-** to continue recursing or not.
-*/
-NSPR_API(PRUword)
-PR_GetStackSpaceLeft(PRThread* t);
 
 /*---------------------------------------------------------------------------
 ** THREAD CPU PRIVATE FUNCTIONS

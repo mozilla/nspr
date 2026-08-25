@@ -24,7 +24,6 @@ CSRCS =             \
 	acceptreademu.c	\
 	addrstr.c		\
 	affinity.c		\
-	alarm.c			\
 	anonfm.c		\
 	append.c		\
 	atomic.c		\
@@ -56,7 +55,6 @@ CSRCS =             \
 	i2l.c		    \
 	initclk.c		\
 	inrval.c		\
-	instrumt.c      \
 	intrio.c        \
 	intrupt.c       \
 	io_timeout.c    \
