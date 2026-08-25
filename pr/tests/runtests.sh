@@ -128,7 +128,6 @@ fsync
 i2l
 initclk
 inrval
-instrumt
 intrio
 intrupt
 io_timeout

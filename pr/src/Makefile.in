@@ -176,7 +176,6 @@ OBJS = \
     memory/$(OBJDIR)/prseg.$(OBJ_SUFFIX) \
     misc/$(OBJDIR)/pralarm.$(OBJ_SUFFIX) \
     misc/$(OBJDIR)/pratom.$(OBJ_SUFFIX) \
-    misc/$(OBJDIR)/prcountr.$(OBJ_SUFFIX) \
     misc/$(OBJDIR)/prdtoa.$(OBJ_SUFFIX) \
     misc/$(OBJDIR)/prenv.$(OBJ_SUFFIX) \
     misc/$(OBJDIR)/prerr.$(OBJ_SUFFIX) \

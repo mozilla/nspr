@@ -102,9 +102,6 @@ initclk.c
 inrval.c
 	Tests interval timing functions.
 
-instrumt.c
-	Tests instrumentation functions. prcountr.h
-
 intrupt.c
 	Tests PR_Interrupt()
 

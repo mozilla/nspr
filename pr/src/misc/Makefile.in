@@ -17,7 +17,6 @@ include $(topsrcdir)/config/config.mk
 CSRCS = \
 	pralarm.c  \
 	pratom.c   \
-	prcountr.c \
 	prdtoa.c   \
 	prenv.c    \
 	prerr.c  \

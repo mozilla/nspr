@@ -42,7 +42,6 @@ f none usr/include/mps/pratom.h 0644 root bin
 f none usr/include/mps/prbit.h 0644 root bin
 f none usr/include/mps/prclist.h 0644 root bin
 f none usr/include/mps/prcmon.h 0644 root bin
-f none usr/include/mps/prcountr.h 0644 root bin
 f none usr/include/mps/prcvar.h 0644 root bin
 f none usr/include/mps/prdtoa.h 0644 root bin
 f none usr/include/mps/prenv.h 0644 root bin

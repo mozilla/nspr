@@ -538,4 +538,4 @@ Finished:
     }
     return ((failed_already) ? 1 : 0);
 } /* main() */
-/* end instrumt.c */
+/* end nameshm1.c */
