@@ -3,8 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /*
- * Program to test different ways to get file info; right now it
- * only works for solaris and OS/2.
+ * Program to compare the cost of the different ways to get file info:
+ * PR_GetFileInfo() vs. the native stat().
  *
  */
 #include "nspr.h"
