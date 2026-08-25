@@ -31,12 +31,6 @@ typedef struct PRSegment PRSegment;
 #include "md/prosdep.h"
 #include "obsolete/probslet.h"
 
-#ifdef _PR_HAVE_POSIX_SEMAPHORES
-#include <semaphore.h>
-#elif defined(_PR_HAVE_SYSV_SEMAPHORES)
-#include <sys/sem.h>
-#endif
-
 #ifdef HAVE_SYSCALL
 #include <sys/syscall.h>
 #endif
@@ -1046,23 +1040,6 @@ extern char* _PR_MD_READ_DIR(_MDDir* md, PRIntn flags);
 extern PRInt32 _PR_MD_CLOSE_DIR(_MDDir* md);
 #define _PR_MD_CLOSE_DIR _MD_CLOSE_DIR
 
-/* Named semaphores related */
-extern PRSem* _PR_MD_OPEN_SEMAPHORE(const char* osname, PRIntn flags,
-                                    PRIntn mode, PRUintn value);
-#define _PR_MD_OPEN_SEMAPHORE _MD_OPEN_SEMAPHORE
-
-extern PRStatus _PR_MD_WAIT_SEMAPHORE(PRSem* sem);
-#define _PR_MD_WAIT_SEMAPHORE _MD_WAIT_SEMAPHORE
-
-extern PRStatus _PR_MD_POST_SEMAPHORE(PRSem* sem);
-#define _PR_MD_POST_SEMAPHORE _MD_POST_SEMAPHORE
-
-extern PRStatus _PR_MD_CLOSE_SEMAPHORE(PRSem* sem);
-#define _PR_MD_CLOSE_SEMAPHORE _MD_CLOSE_SEMAPHORE
-
-extern PRStatus _PR_MD_DELETE_SEMAPHORE(const char* osname);
-#define _PR_MD_DELETE_SEMAPHORE _MD_DELETE_SEMAPHORE
-
 /* I/O related */
 extern void _PR_MD_INIT_FILEDESC(PRFileDesc* fd);
 #define _PR_MD_INIT_FILEDESC _MD_INIT_FILEDESC
@@ -1518,17 +1495,6 @@ struct PRSemaphore {
 
 /*************************************************************************/
 
-struct PRSem {
-#ifdef _PR_HAVE_POSIX_SEMAPHORES
-    sem_t* sem;
-#elif defined(_PR_HAVE_SYSV_SEMAPHORES)
-    int semid;
-#elif defined(WIN32)
-    HANDLE sem;
-#else
-    PRInt8 notused;
-#endif
-};
 
 /*************************************************************************/
 
@@ -2084,8 +2050,7 @@ extern PRFileMap* _md_ImportFileMapFromString(const char* fmstring);
  * Types of NSPR IPC objects
  */
 typedef enum {
-    _PRIPCSem, /* semaphores */
-    _PRIPCShm  /* shared memory segments */
+    _PRIPCShm /* shared memory segments */
 } _PRIPCType;
 
 /*

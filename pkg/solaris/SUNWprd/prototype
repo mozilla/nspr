@@ -50,7 +50,6 @@ f none usr/include/mps/prinet.h 0644 root bin
 f none usr/include/mps/prinit.h 0644 root bin
 f none usr/include/mps/prinrval.h 0644 root bin
 f none usr/include/mps/prio.h 0644 root bin
-f none usr/include/mps/pripcsem.h 0644 root bin
 f none usr/include/mps/private/pprio.h 0644 root bin
 f none usr/include/mps/private/pprthred.h 0644 root bin
 f none usr/include/mps/private/prpriv.h 0644 root bin

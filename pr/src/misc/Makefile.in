@@ -33,12 +33,6 @@ CSRCS = \
 	prtime.c   \
 	$(NULL)
 
-ifndef USE_PTHREADS
-CSRCS += \
-	pripcsem.c \
-	$(NULL)
-endif
-
 TARGETS	= $(OBJS)
 
 INCLUDES = -I$(dist_includedir) -I$(topsrcdir)/pr/include -I$(topsrcdir)/pr/include/private

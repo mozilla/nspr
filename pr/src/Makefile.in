@@ -201,8 +201,7 @@ OBJS += \
     io/$(OBJDIR)/prdir.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prfile.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prio.$(OBJ_SUFFIX) \
-    io/$(OBJDIR)/prsocket.$(OBJ_SUFFIX) \
-    misc/$(OBJDIR)/pripcsem.$(OBJ_SUFFIX)
+    io/$(OBJDIR)/prsocket.$(OBJ_SUFFIX)
 
 ifndef USE_BTHREADS
 OBJS += \

@@ -169,9 +169,6 @@ selct_er
 selct_nm
 selct_to
 selintr
-sema
-semaerr
-semaping
 sendzlf
 server_test
 servr_kk

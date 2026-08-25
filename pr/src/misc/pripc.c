@@ -26,30 +26,6 @@
  */
 
 static void
-_pr_ConvertSemName(char* result)
-{
-#ifdef _PR_HAVE_POSIX_SEMAPHORES
-#if defined(SOLARIS)
-    char* p;
-
-    /* Convert '/' to '_' except for the leading '/' */
-    for (p = result + 1; *p; p++) {
-        if (*p == '/') {
-            *p = '_';
-        }
-    }
-    return;
-#else
-    return;
-#endif
-#elif defined(_PR_HAVE_SYSV_SEMAPHORES)
-    return;
-#elif defined(WIN32)
-    return;
-#endif
-}
-
-static void
 _pr_ConvertShmName(char* result)
 {
 #if defined(PR_HAVE_POSIX_NAMED_SHARED_MEMORY)
@@ -85,9 +61,6 @@ _PR_MakeNativeIPCName(const char* name, char* result, PRIntn size,
     }
     strcpy(result, name);
     switch (type) {
-        case _PRIPCSem:
-            _pr_ConvertSemName(result);
-            break;
         case _PRIPCShm:
             _pr_ConvertShmName(result);
             break;

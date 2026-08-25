@@ -129,11 +129,6 @@ CSRCS =             \
 	select2.c  		\
 	selintr.c  		\
 	sem.c 	  		\
-	sema.c 	  		\
-	semaerr.c 		\
-	semaerr1.c 		\
-	semaping.c 		\
-	semapong.c 		\
 	sendzlf.c 		\
 	server_test.c	\
 	servr_kk.c		\

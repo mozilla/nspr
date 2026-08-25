@@ -59,7 +59,6 @@ EXPORTS ;-
 		PR_Close;
 		PR_CloseDir;
 		PR_CloseFileMap;
-		PR_CloseSemaphore;
 		PR_CloseSharedMemory;
 		PR_Connect;
 		PR_ConvertIPv4AddrToIPv6;
@@ -75,7 +74,6 @@ EXPORTS ;-
 		PR_CreateThreadGCAble;
 		PR_CreateWaitGroup;
 		PR_Delete;
-		PR_DeleteSemaphore;
 		PR_DeleteSharedMemory;
 		PR_DestroyCondVar;
 		PR_DestroyLock;
@@ -226,7 +224,6 @@ EXPORTS ;-
 		PR_OpenAnonFileMap;
 		PR_OpenDir;
 		PR_OpenFile;
-		PR_OpenSemaphore;
 		PR_OpenSharedMemory;
 		PR_OpenTCPSocket;
 		PR_OpenUDPSocket;
@@ -234,7 +231,6 @@ EXPORTS ;-
 		PR_Poll;
 		PR_PopIOLayer;
 		PR_PostSem;
-		PR_PostSemaphore;
 		PR_ProcessAttrSetCurrentDirectory;
 		PR_ProcessAttrSetInheritableFD;
 		PR_ProcessAttrSetInheritableFileMap;
@@ -301,7 +297,6 @@ EXPORTS ;-
 		PR_WaitProcess;
 		PR_WaitRecvReady;
 		PR_WaitSem;
-		PR_WaitSemaphore;
 		PR_Write;
 		PR_Writev;
 		PR_Yield;
