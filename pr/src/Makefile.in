@@ -206,7 +206,6 @@ ifndef USE_BTHREADS
 OBJS += \
 	threads/$(OBJDIR)/prcthr.$(OBJ_SUFFIX) \
 	threads/$(OBJDIR)/prmon.$(OBJ_SUFFIX) \
-	threads/$(OBJDIR)/prsem.$(OBJ_SUFFIX) \
 	threads/combined/$(OBJDIR)/prucpu.$(OBJ_SUFFIX) \
 	threads/combined/$(OBJDIR)/prucv.$(OBJ_SUFFIX) \
 	threads/combined/$(OBJDIR)/prulock.$(OBJ_SUFFIX) \

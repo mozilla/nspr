@@ -35,15 +35,6 @@ _PR_CleanupThread(PRThread* thread)
     thread->environment = NULL;
 }
 
-PR_IMPLEMENT(PRStatus)
-PR_Yield()
-{
-    static PRBool warning = PR_TRUE;
-    if (warning)
-        warning = _PR_Obsolete("PR_Yield()", "PR_Sleep(PR_INTERVAL_NO_WAIT)");
-    return (PR_Sleep(PR_INTERVAL_NO_WAIT));
-}
-
 /*
 ** Make the current thread sleep until "timeout" ticks amount of time
 ** has expired. If "timeout" is PR_INTERVAL_NO_WAIT then the call is
@@ -83,9 +74,9 @@ PR_Sleep(PRIntervalTime timeout)
                 _PR_ADD_RUNQ(me, cpu, pri);
                 _PR_RUNQ_UNLOCK(cpu);
 
-                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Yield: yielding"));
+                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Sleep: yielding"));
                 _PR_MD_SWITCH_CONTEXT(me);
-                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Yield: done"));
+                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Sleep: done"));
 
                 _PR_FAST_INTSON(is);
             } else {

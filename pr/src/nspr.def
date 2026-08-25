@@ -75,7 +75,6 @@ EXPORTS ;-
 		PR_DestroyMonitor;
 		PR_DestroyProcessAttr;
 		PR_DestroyRWLock;
-		PR_DestroySem;
 		PR_DestroySocketPollFd;
 		PR_DestroyStack;
 		PR_DetachProcess;
@@ -94,13 +93,6 @@ EXPORTS ;-
 		PR_ExitMonitor;
 		PR_ExplodeTime;
 		PR_ExportFileMapAsString;
-		PR_FD_CLR;
-		PR_FD_ISSET;
-		PR_FD_NCLR;
-		PR_FD_NISSET;
-		PR_FD_NSET;
-		PR_FD_SET;
-		PR_FD_ZERO;
 		PR_FileDesc2NativeHandle;
 		PR_FindSymbol;
 		PR_FindSymbolAndLibrary;
@@ -148,7 +140,6 @@ EXPORTS ;-
 		PR_GetSockName;
 		PR_GetSocketOption;
 		PR_GetSpecialFD;
-		PR_GetSysfdTableMax;
 		PR_GetSystemInfo;
 		PR_GetTCPMethods;
 		PR_GetThreadAffinityMask;
@@ -201,7 +192,6 @@ EXPORTS ;-
 		PR_NewNamedMonitor;
 		PR_NewProcessAttr;
 		PR_NewRWLock;
-		PR_NewSem;
 		PR_NewTCPSocket;
 		PR_NewTCPSocketPair;
 		PR_NewThreadPrivateIndex;
@@ -222,7 +212,6 @@ EXPORTS ;-
 		PR_ParseTimeString;
 		PR_Poll;
 		PR_PopIOLayer;
-		PR_PostSem;
 		PR_ProcessAttrSetCurrentDirectory;
 		PR_ProcessAttrSetInheritableFD;
 		PR_ProcessAttrSetInheritableFileMap;
@@ -244,7 +233,6 @@ EXPORTS ;-
 		PR_SecondsToInterval;
 		PR_Seek;
 		PR_Seek64;
-		PR_Select;
 		PR_Send;
 		PR_SendFile;
 		PR_SendTo;
@@ -259,7 +247,6 @@ EXPORTS ;-
 		PR_SetNetAddr;
 		PR_SetSocketOption;
 		PR_SetStdioRedirect;
-		PR_SetSysfdTableSize;
 		PR_SetThreadAffinityMask;
 		PR_SetThreadGCAble;
 		PR_SetThreadPriority;
@@ -270,7 +257,6 @@ EXPORTS ;-
 		PR_Socket;
 		PR_StackPop;
 		PR_StackPush;
-		PR_Stat;
 		PR_StringToNetAddr;
 		PR_SuspendAll;
 		PR_Sync;
@@ -287,10 +273,8 @@ EXPORTS ;-
 		PR_Wait;
 		PR_WaitCondVar;
 		PR_WaitProcess;
-		PR_WaitSem;
 		PR_Write;
 		PR_Writev;
-		PR_Yield;
 		PR_cnvtf;
 		PR_dtoa;
 		PR_fprintf;

@@ -12,7 +12,7 @@ VPATH		= @srcdir@
 
 include $(MOD_DEPTH)/config/autoconf.mk
 
-DIRS = md private obsolete
+DIRS = md private
 
 include $(topsrcdir)/config/config.mk
 

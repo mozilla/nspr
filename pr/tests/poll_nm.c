@@ -34,7 +34,6 @@
 #include "prlog.h"
 #include "prprf.h"
 #include "prnetdb.h"
-#include "obsolete/probslet.h"
 
 #include "private/pprio.h"
 

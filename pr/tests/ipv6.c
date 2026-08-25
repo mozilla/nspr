@@ -13,7 +13,6 @@
 
 #include "plerror.h"
 #include "plgetopt.h"
-#include "obsolete/probslet.h"
 
 #include <string.h>
 

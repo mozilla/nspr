@@ -29,7 +29,6 @@
 typedef struct PRSegment PRSegment;
 
 #include "md/prosdep.h"
-#include "obsolete/probslet.h"
 
 #ifdef HAVE_SYSCALL
 #include <sys/syscall.h>
@@ -1475,26 +1474,6 @@ struct PRMonitor {
                             * The special value -1 means a broadcast
                             * (PR_NotifyAll). */
 };
-
-/************************************************************************/
-
-struct PRSemaphore {
-#if defined(_PR_BTHREADS)
-    sem_id sem;
-    int32 benaphoreCount;
-#else
-    PRCondVar* cvar;  /* associated lock and condition variable queue */
-    PRUintn count;    /* the value of the counting semaphore */
-    PRUint32 waiters; /* threads waiting on the semaphore */
-#if defined(_PR_PTHREADS)
-#else  /* defined(_PR_PTHREADS) */
-    _MDSemaphore md;
-#endif /* defined(_PR_PTHREADS) */
-#endif /* defined(_PR_BTHREADS) */
-};
-
-/*************************************************************************/
-
 
 /*************************************************************************/
 

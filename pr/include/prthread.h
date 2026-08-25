@@ -250,8 +250,8 @@ PR_UnblockInterrupt(void);
 
 /*
 ** Make the current thread sleep until "ticks" time amount of time
-** has expired. If "ticks" is PR_INTERVAL_NO_WAIT then the call is
-** equivalent to calling PR_Yield. Calling PR_Sleep with an argument
+** has expired. If "ticks" is PR_INTERVAL_NO_WAIT then the call only
+** yields the processor. Calling PR_Sleep with an argument
 ** equivalent to PR_INTERVAL_NO_TIMEOUT is an error and will result
 ** in a PR_FAILURE error return.
 */

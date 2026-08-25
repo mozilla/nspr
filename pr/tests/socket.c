@@ -31,7 +31,46 @@
 static int _debug_on = 0;
 static int test_cancelio = 0;
 
-#include "obsolete/prsem.h"
+/* A one-shot readiness signal, formerly a counting semaphore. */
+typedef struct ReadySignal {
+    PRMonitor* mon;
+    PRBool ready;
+} ReadySignal;
+
+static ReadySignal*
+NewReadySignal(void)
+{
+    ReadySignal* rs = PR_NEW(ReadySignal);
+    if (NULL == rs) {
+        return NULL;
+    }
+    rs->mon = PR_NewMonitor();
+    if (NULL == rs->mon) {
+        PR_DELETE(rs);
+        return NULL;
+    }
+    rs->ready = PR_FALSE;
+    return rs;
+}
+
+static void
+SignalReady(ReadySignal* rs)
+{
+    PR_EnterMonitor(rs->mon);
+    rs->ready = PR_TRUE;
+    PR_Notify(rs->mon);
+    PR_ExitMonitor(rs->mon);
+}
+
+static void
+WaitReady(ReadySignal* rs)
+{
+    PR_EnterMonitor(rs->mon);
+    while (!rs->ready) {
+        PR_Wait(rs->mon, PR_INTERVAL_NO_TIMEOUT);
+    }
+    PR_ExitMonitor(rs->mon);
+}
 
 #ifdef XP_PC
 #define mode_t int
@@ -124,7 +163,7 @@ typedef struct Serve_Client_Param {
 } Serve_Client_Param;
 
 typedef struct Server_Param {
-    PRSemaphore* addr_sem; /* sem to post on, after setting up the address */
+    ReadySignal* addr_sem; /* signalled after setting up the address */
     PRMonitor* exit_mon;   /* monitor to signal on exit            */
     PRInt32* exit_counter; /* counter to decrement, before exit        */
     PRInt32 datalen;       /* bytes of data transfered in each read/write    */
@@ -425,7 +464,7 @@ TCP_Server(void* arg)
      * Wake up parent thread because server address is bound and made
      * available in the global variable 'tcp_server_addr'
      */
-    PR_PostSem(sp->addr_sem);
+    SignalReady(sp->addr_sem);
 
     for (i = 0; i < (num_tcp_clients * num_tcp_connections_per_client); i++) {
         /* test both null and non-null 'addr' argument to PR_Accept */
@@ -556,7 +595,7 @@ UDP_Server(void* arg)
      * Wake up parent thread because server address is bound and made
      * available in the global variable 'udp_server_addr'
      */
-    PR_PostSem(sp->addr_sem);
+    SignalReady(sp->addr_sem);
 
     bytes = sp->datalen;
     in_buf = PR_NEW(buffer);
@@ -854,7 +893,7 @@ TCP_Socket_Client_Server_Test(void)
 {
     int i;
     PRThread* t;
-    PRSemaphore* server_sem;
+    ReadySignal* server_sem;
     Server_Param* sparamp;
     Client_Param* cparamp;
     PRMonitor* mon2;
@@ -871,9 +910,9 @@ TCP_Socket_Client_Server_Test(void)
         failed_already = 1;
         return -1;
     }
-    server_sem = PR_NewSem(0);
+    server_sem = NewReadySignal();
     if (server_sem == NULL) {
-        fprintf(stderr, "prsocket_test: PR_NewSem failed\n");
+        fprintf(stderr, "prsocket_test: NewReadySignal failed\n");
         failed_already = 1;
         return -1;
     }
@@ -903,7 +942,7 @@ TCP_Socket_Client_Server_Test(void)
     /*
      * wait till the server address is setup
      */
-    PR_WaitSem(server_sem);
+    WaitReady(server_sem);
 
     /*
      * Now start a bunch of client threads
@@ -963,7 +1002,7 @@ UDP_Socket_Client_Server_Test(void)
 {
     int i;
     PRThread* t;
-    PRSemaphore* server_sem;
+    ReadySignal* server_sem;
     Server_Param* sparamp;
     Client_Param* cparamp;
     PRMonitor* mon2;
@@ -981,9 +1020,9 @@ UDP_Socket_Client_Server_Test(void)
         failed_already = 1;
         return -1;
     }
-    server_sem = PR_NewSem(0);
+    server_sem = NewReadySignal();
     if (server_sem == NULL) {
-        fprintf(stderr, "prsocket_test: PR_NewSem failed\n");
+        fprintf(stderr, "prsocket_test: NewReadySignal failed\n");
         failed_already = 1;
         return -1;
     }
@@ -1013,7 +1052,7 @@ UDP_Socket_Client_Server_Test(void)
     /*
      * wait till the server address is setup
      */
-    PR_WaitSem(server_sem);
+    WaitReady(server_sem);
 
     /*
      * Now start a bunch of client threads
@@ -1694,7 +1733,7 @@ TransmitFile_Server(void* arg)
      * Wake up parent thread because server address is bound and made
      * available in the global variable 'tcp_server_addr'
      */
-    PR_PostSem(sp->addr_sem);
+    SignalReady(sp->addr_sem);
 
     for (i = 0; i < num_transmitfile_clients; i++) {
         /* test both null and non-null 'addr' argument to PR_Accept */
@@ -1783,7 +1822,7 @@ Socket_Misc_Test(void)
 {
     PRIntn i, rv = 0, bytes, count, len;
     PRThread* t;
-    PRSemaphore* server_sem;
+    ReadySignal* server_sem;
     Server_Param* sparamp;
     Client_Param* cparamp;
     PRMonitor* mon2;
@@ -1962,9 +2001,9 @@ Socket_Misc_Test(void)
         rv = -1;
         goto done;
     }
-    server_sem = PR_NewSem(0);
+    server_sem = NewReadySignal();
     if (server_sem == NULL) {
-        fprintf(stderr, "prsocket_test: PR_NewSem failed\n");
+        fprintf(stderr, "prsocket_test: NewReadySignal failed\n");
         failed_already = 1;
         rv = -1;
         goto done;
@@ -1997,7 +2036,7 @@ Socket_Misc_Test(void)
     /*
      * wait till the server address is setup
      */
-    PR_WaitSem(server_sem);
+    WaitReady(server_sem);
 
     /*
      * Now start a bunch of client threads

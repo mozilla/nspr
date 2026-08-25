@@ -769,15 +769,6 @@ PR_UnblockInterrupt(void)
 } /* PR_UnblockInterrupt */
 
 PR_IMPLEMENT(PRStatus)
-PR_Yield(void)
-{
-    static PRBool warning = PR_TRUE;
-    if (warning)
-        warning = _PR_Obsolete("PR_Yield()", "PR_Sleep(PR_INTERVAL_NO_WAIT)");
-    return PR_Sleep(PR_INTERVAL_NO_WAIT);
-}
-
-PR_IMPLEMENT(PRStatus)
 PR_Sleep(PRIntervalTime ticks)
 {
     PRStatus rv = PR_SUCCESS;

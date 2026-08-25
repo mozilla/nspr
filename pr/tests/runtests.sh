@@ -53,9 +53,6 @@ fi
 #io_timeoutu - obsolete; subsumed in io_timeout
 #prftest1	- obsolete; subsumed by prftest
 #prftest2	- obsolete; subsumed by prftest
-#prselect	- obsolete; PR_Select is obsolete
-#select2	- obsolete; PR_Select is obsolete
-#sem		- obsolete; PRSemaphore is obsolete
 #suspend	- private interfaces PR_SuspendAll, PR_ResumeAll, etc..
 #thruput	- needs to be run manually as client/server
 #time		- used to measure time with native calls and nspr calls
@@ -118,7 +115,6 @@ dtoa
 errcodes
 exit
 fdcach
-fileio
 foreign
 formattm
 fsync
@@ -164,9 +160,6 @@ randseed
 reinit
 rwlocktest
 sel_spd
-selct_er
-selct_nm
-selct_to
 selintr
 sendzlf
 server_test

@@ -11,7 +11,6 @@
 #if defined(_PR_PTHREADS)
 
 #include "primpl.h"
-#include "obsolete/prsem.h"
 
 #include <string.h>
 #include <pthread.h>
@@ -744,79 +743,6 @@ PR_NotifyAll(PRMonitor* mon)
     return PR_SUCCESS;
 } /* PR_NotifyAll */
 
-/**************************************************************/
-/**************************************************************/
-/**************************SEMAPHORES**************************/
-/**************************************************************/
-/**************************************************************/
-PR_IMPLEMENT(void)
-PR_PostSem(PRSemaphore* semaphore)
-{
-    static PRBool unwarned = PR_TRUE;
-    if (unwarned)
-        unwarned = _PR_Obsolete("PR_PostSem", "locks & condition variables");
-    PR_Lock(semaphore->cvar->lock);
-    PR_NotifyCondVar(semaphore->cvar);
-    semaphore->count += 1;
-    PR_Unlock(semaphore->cvar->lock);
-} /* PR_PostSem */
-
-PR_IMPLEMENT(PRStatus)
-PR_WaitSem(PRSemaphore* semaphore)
-{
-    PRStatus status = PR_SUCCESS;
-    static PRBool unwarned = PR_TRUE;
-    if (unwarned)
-        unwarned = _PR_Obsolete("PR_WaitSem", "locks & condition variables");
-    PR_Lock(semaphore->cvar->lock);
-    while ((semaphore->count == 0) && (PR_SUCCESS == status)) {
-        status = PR_WaitCondVar(semaphore->cvar, PR_INTERVAL_NO_TIMEOUT);
-    }
-    if (PR_SUCCESS == status) {
-        semaphore->count -= 1;
-    }
-    PR_Unlock(semaphore->cvar->lock);
-    return status;
-} /* PR_WaitSem */
-
-PR_IMPLEMENT(void)
-PR_DestroySem(PRSemaphore* semaphore)
-{
-    static PRBool unwarned = PR_TRUE;
-    if (unwarned)
-        unwarned = _PR_Obsolete("PR_DestroySem", "locks & condition variables");
-    PR_DestroyLock(semaphore->cvar->lock);
-    PR_DestroyCondVar(semaphore->cvar);
-    PR_Free(semaphore);
-} /* PR_DestroySem */
-
-PR_IMPLEMENT(PRSemaphore*)
-PR_NewSem(PRUintn value)
-{
-    PRSemaphore* semaphore;
-    static PRBool unwarned = PR_TRUE;
-    if (!_pr_initialized) {
-        _PR_ImplicitInitialization();
-    }
-
-    if (unwarned)
-        unwarned = _PR_Obsolete("PR_NewSem", "locks & condition variables");
-
-    semaphore = PR_NEWZAP(PRSemaphore);
-    if (NULL != semaphore) {
-        PRLock* lock = PR_NewLock();
-        if (NULL != lock) {
-            semaphore->cvar = PR_NewCondVar(lock);
-            if (NULL != semaphore->cvar) {
-                semaphore->count = value;
-                return semaphore;
-            }
-            PR_DestroyLock(lock);
-        }
-        PR_Free(semaphore);
-    }
-    return NULL;
-}
 #endif /* defined(_PR_PTHREADS) */
 
 /* ptsynch.c */
