@@ -108,7 +108,6 @@ accept
 acceptread
 acceptreademu
 affinity
-alarm
 anonfm
 atomic
 attach
@@ -128,7 +127,6 @@ fsync
 i2l
 initclk
 inrval
-instrumt
 intrio
 intrupt
 io_timeout
@@ -158,7 +156,6 @@ pipeping2
 pipeself
 poll_nm
 poll_to
-pollable
 prefloop
 prftest
 prfz

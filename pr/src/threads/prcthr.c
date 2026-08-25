@@ -28,12 +28,6 @@ _PR_CleanupThread(PRThread* thread)
     /* Free up per-thread-data */
     _PR_DestroyThreadPrivate(thread);
 
-    /* Free any thread dump procs */
-    if (thread->dumpArg) {
-        PR_DELETE(thread->dumpArg);
-    }
-    thread->dump = 0;
-
     PR_DELETE(thread->name);
     PR_DELETE(thread->errorString);
     thread->errorStringSize = 0;

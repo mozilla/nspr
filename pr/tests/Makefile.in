@@ -105,7 +105,6 @@ CSRCS =             \
 	poll_er.c		\
 	poll_nm.c		\
 	poll_to.c		\
-	pollable.c		\
 	prefloop.c		\
 	prfdbl.c		\
 	prftest.c		\
@@ -159,8 +158,6 @@ CSRCS =             \
 	system.c		\
 	testbit.c    	\
 	testfile.c    	\
-	thrpool_server.c \
-	thrpool_client.c \
 	threads.c 	  	\
 	thruput.c 	  	\
 	timemac.c		\

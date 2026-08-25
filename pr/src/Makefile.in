@@ -160,7 +160,6 @@ OBJS = \
     io/$(OBJDIR)/prlayer.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prlog.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prmmap.$(OBJ_SUFFIX) \
-    io/$(OBJDIR)/prpolevt.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prprf.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prscanf.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prstdio.$(OBJ_SUFFIX) \
@@ -189,7 +188,6 @@ OBJS = \
     misc/$(OBJDIR)/praton.$(OBJ_SUFFIX) \
     misc/$(OBJDIR)/prrng.$(OBJ_SUFFIX)	 \
     misc/$(OBJDIR)/prsystem.$(OBJ_SUFFIX) \
-    misc/$(OBJDIR)/prtpool.$(OBJ_SUFFIX) \
     misc/$(OBJDIR)/prtime.$(OBJ_SUFFIX)
 
 ifdef USE_PTHREADS

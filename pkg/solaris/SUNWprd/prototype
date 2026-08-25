@@ -72,7 +72,6 @@ f none usr/include/mps/prshma.h 0644 root bin
 f none usr/include/mps/prsystem.h 0644 root bin
 f none usr/include/mps/prthread.h 0644 root bin
 f none usr/include/mps/prtime.h 0644 root bin
-f none usr/include/mps/prtpool.h 0644 root bin
 f none usr/include/mps/prtypes.h 0644 root bin
 f none usr/include/mps/prvrsion.h 0644 root bin
 f none usr/include/mps/plarenas.h 0644 root bin
