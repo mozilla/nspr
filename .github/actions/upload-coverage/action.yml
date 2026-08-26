@@ -1,0 +1,23 @@
+name: Upload coverage
+description: Upload a coverage report to Codecov under a per-platform flag.
+
+inputs:
+  flags:
+    description: Codecov flag identifying the platform.
+    required: true
+  token:
+    description: Codecov token.
+    required: true
+  gcov:
+    description: gcov executable, where the default one cannot read the data.
+    default: gcov
+
+runs:
+  using: composite
+  steps:
+    - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      with:
+        gcov_executable: ${{ inputs.gcov }}
+        flags: ${{ inputs.flags }}
+        fail_ci_if_error: true
+        token: ${{ inputs.token }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
