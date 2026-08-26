@@ -1,0 +1,9 @@
+# https://docs.codecov.com/docs/codecov-yaml
+ignore:
+  - "pr/tests"
+  - "lib/tests"
+
+# Coverage is uploaded per platform, so one failed job must not look like a drop.
+flag_management:
+  default_rules:
+    carryforward: true

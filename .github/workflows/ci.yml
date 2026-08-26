@@ -23,20 +23,52 @@ jobs:
         include:
           - os: ubuntu-latest
             cc: gcc
+            coverage: true
+          # Left uninstrumented, so one entry still builds the default optimized config.
           - os: ubuntu-latest
             cc: clang
           - os: ubuntu-24.04-arm
             cc: clang
+            coverage: true
+            gcov: llvm-gcov
           - os: macos-latest
+            coverage: true
           - os: macos-15-intel
+            coverage: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
+      # macOS ships LLVM's gcov as gcov, but for clang on Linux the subcommand
+      # has to be wrapped: Codecov takes a single gcov executable.
+      - name: Install llvm-cov shim
+        if: matrix.gcov
+        run: |
+          sudo apt-get update && sudo apt-get install -y llvm
+          llvm_cov=$(command -v llvm-cov || command -v "llvm-cov-$(clang -dumpversion | cut -d. -f1)" || true)
+          [ -n "$llvm_cov" ] || { echo "::error::no llvm-cov found"; exit 1; }
+          printf '#!/bin/sh\nexec %s gcov "$@"\n' "$llvm_cov" >"$RUNNER_TEMP/llvm-gcov"
+          chmod +x "$RUNNER_TEMP/llvm-gcov"
+          echo "$RUNNER_TEMP" >>"$GITHUB_PATH"
+
       - uses: ./.github/actions/build-and-test
         with:
           cc: ${{ matrix.cc }}
+          cflags: ${{ matrix.coverage && '-O0 -g --coverage -fprofile-update=atomic' || '' }}
+          cxxflags: ${{ matrix.coverage && '-O0 -g --coverage -fprofile-update=atomic' || '' }}
+          ldflags: ${{ matrix.coverage && '--coverage' || '' }}
+          configure-args: ${{ matrix.coverage && '--enable-debug' || '' }}
+          test-make-args: ${{ matrix.coverage && 'XCFLAGS=--coverage' || '' }}
+
+      - name: Upload coverage to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          gcov_executable: ${{ matrix.gcov || 'gcov' }}
+          flags: ${{ matrix.os }}${{ matrix.cc && format('-{0}', matrix.cc) || '' }}
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   warnings-as-errors:
     name: ubuntu-latest (clang, -Wall -Werror)
@@ -122,40 +154,6 @@ jobs:
             fi
           done
           exit $rval
-
-  coverage:
-    name: ubuntu-latest (coverage)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install lcov
-        run: sudo apt-get update && sudo apt-get install -y lcov
-
-      - uses: ./.github/actions/build-and-test
-        with:
-          cflags: "-O0 -g --coverage -fprofile-update=atomic"
-          cxxflags: "-O0 -g --coverage -fprofile-update=atomic"
-          ldflags: "--coverage"
-          configure-args: --enable-debug
-          test-make-args: XCFLAGS=--coverage
-
-      - name: Capture coverage
-        run: |
-          lcov --directory target --capture --output-file coverage.info \
-               --ignore-errors mismatch,negative,unused,gcov,source
-          lcov --remove coverage.info '/usr/*' '*/pr/tests/*' --output-file coverage.info \
-               --ignore-errors unused
-          lcov --list coverage.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
-        with:
-          files: coverage.info
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   windows:
     name: windows-latest
