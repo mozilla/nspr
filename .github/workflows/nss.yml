@@ -6,21 +6,30 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-nss:
     name: Build NSS against NSPR main
     runs-on: ubuntu-latest
     steps:
       - name: Checkout NSPR
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: nspr
+          persist-credentials: false
 
       - name: Checkout NSS
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: nss-dev/nss
           path: nss
+          persist-credentials: false
 
       - name: Install build dependencies
         run: |

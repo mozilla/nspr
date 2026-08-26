@@ -1,0 +1,26 @@
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/.github/actions/*"
+      - "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 99
+    groups:
+      # Kept separate so it lands as soon as it is released; see the cooldown exclude below.
+      mozilla-actions:
+        patterns:
+          - "mozilla/actions*"
+      # Everything else in a single pull request.
+      actions:
+        patterns:
+          - "*"
+    cooldown:
+      default-days: 10
+      # "semver" not supported for github-actions; see https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#configuration-of-cooldown
+      exclude:
+        - "mozilla/actions*"
