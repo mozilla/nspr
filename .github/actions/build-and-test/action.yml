@@ -49,11 +49,13 @@ runs:
       env:
         CONFIGURE_ARGS: ${{ inputs.configure-args }}
       run: |
+        # Configure by absolute path, so VPATH and the source paths gcov records are absolute, too.
+        srcdir=$PWD
         mkdir target
         cd target
         # Word splitting of $CONFIGURE_ARGS is intended.
         # shellcheck disable=SC2086
-        ../configure --enable-64bit $CONFIGURE_ARGS --prefix="$PWD/dist"
+        "$srcdir/configure" --enable-64bit $CONFIGURE_ARGS --prefix="$PWD/dist"
         make
 
     - name: Build tests
