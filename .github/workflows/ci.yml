@@ -181,17 +181,19 @@ jobs:
       matrix:
         include:
           - arch: x64
-            vcvars: vcvars64.bat
-            tools: x64
             bits: --enable-64bit
           - arch: x86
-            vcvars: vcvars32.bat
-            tools: x86
             bits: ""
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # TODO: Would like to pin this, but the Mozilla org allowlist requires "ilammy/msvc-dev-cmd@v1*".
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1 # zizmor: ignore[unpinned-uses]
+        with:
+          arch: ${{ matrix.arch }}
 
       - name: Install MozillaBuild
         shell: pwsh
@@ -203,12 +205,14 @@ jobs:
       - name: Write build script
         shell: bash
         env:
+          ARCH: ${{ matrix.arch }}
           BITS: ${{ matrix.bits }}
-          TOOLS: ${{ matrix.tools }}
         run: |
           cat > build.sh <<EOF
           set -e
-          export PATH="\$(cygpath -u "\$VCToolsInstallDir")bin/Hostx64/$TOOLS:\$PATH"
+          # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
+          rm -f /usr/bin/link.exe
+          export PATH="\$(cygpath -u "\$VCToolsInstallDir")bin/Hostx64/$ARCH:\$PATH"
           mkdir target
           cd target
           ../configure $BITS --enable-win32-target=WIN95 --prefix="\$PWD/dist"
@@ -219,14 +223,10 @@ jobs:
           EOF
 
       - name: Build and test
-        shell: cmd # zizmor: ignore[misfeature] Needed to "call vcvars*.bat".
+        shell: pwsh
         env:
-          VCVARS: ${{ matrix.vcvars }}
-        run: |
-          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VSPATH=%%i
-          call "%VSPATH%\VC\Auxiliary\Build\%VCVARS%"
-          set MOZILLABUILD=C:\mozilla-build\
-          C:\mozilla-build\msys2\msys2_shell.cmd -no-start -defterm -full-path -here -c "bash build.sh"
+          MOZILLABUILD: C:\mozilla-build\
+        run: C:\mozilla-build\msys2\msys2_shell.cmd -no-start -defterm -full-path -here -c "bash build.sh"
 
   # MSVC has no gcov, so mingw is the only Windows toolchain here that can
   # produce coverage.
@@ -247,7 +247,7 @@ jobs:
       - name: Install toolchain
         run: |
           pacman -Sy --noconfirm
-          pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc make
+          pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc make nsinstall
 
       - name: Configure, build and test
         env:
