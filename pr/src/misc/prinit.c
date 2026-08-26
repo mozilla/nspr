@@ -196,7 +196,6 @@ _PR_InitStuff(void)
     _PR_InitLinker();
     _PR_InitCallOnce();
     _PR_InitDtoa();
-    _PR_InitMW();
     _PR_InitRWLocks();
 
     nspr_InitializePRErrorTable();
@@ -368,7 +367,6 @@ PR_Cleanup()
 
         _PR_MD_EARLY_CLEANUP();
 
-        _PR_CleanupMW();
         _PR_CleanupTime();
         _PR_CleanupDtoa();
         _PR_CleanupCallOnce();

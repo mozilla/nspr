@@ -19,7 +19,6 @@
 #undef HAVE_BSD_FLOCK
 #define _PR_NO_LARGE_FILES
 #define _PR_STAT_HAS_ONLY_ST_ATIME
-#define _PR_HAVE_POSIX_SEMAPHORES
 
 #include <sys/select.h>
 #include <sys/poll.h>

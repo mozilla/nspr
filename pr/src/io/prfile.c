@@ -392,68 +392,6 @@ PR_OpenFile(const char* name, PRIntn flags, PRIntn mode)
     return fd;
 }
 
-PR_IMPLEMENT(PRInt32)
-PR_GetSysfdTableMax(void)
-{
-#if defined(XP_UNIX) && !defined(AIX) && !defined(QNX)
-    struct rlimit rlim;
-
-    if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
-        /* XXX need to call PR_SetError() */
-        return -1;
-    }
-
-    return rlim.rlim_max;
-#elif defined(AIX) || defined(QNX)
-    return sysconf(_SC_OPEN_MAX);
-#elif defined(WIN32)
-    /*
-     * There is a systemwide limit of 65536 user handles.
-     */
-    return 16384;
-#else
-    write me;
-#endif
-}
-
-PR_IMPLEMENT(PRInt32)
-PR_SetSysfdTableSize(int table_size)
-{
-#if defined(XP_UNIX) && !defined(AIX) && !defined(QNX)
-    struct rlimit rlim;
-    PRInt32 tableMax = PR_GetSysfdTableMax();
-
-    if (tableMax < 0) {
-        return -1;
-    }
-
-    if (tableMax > FD_SETSIZE) {
-        tableMax = FD_SETSIZE;
-    }
-
-    rlim.rlim_max = tableMax;
-
-    /* Grow as much as we can; even if too big */
-    if (rlim.rlim_max < table_size) {
-        rlim.rlim_cur = rlim.rlim_max;
-    } else {
-        rlim.rlim_cur = table_size;
-    }
-
-    if (setrlimit(RLIMIT_NOFILE, &rlim) < 0) {
-        /* XXX need to call PR_SetError() */
-        return -1;
-    }
-
-    return rlim.rlim_cur;
-#elif defined(AIX) || defined(QNX) || defined(WIN32)
-    PR_SetError(PR_NOT_IMPLEMENTED_ERROR, 0);
-    return -1;
-#else
-    write me;
-#endif
-}
-
 PR_IMPLEMENT(PRStatus)
 PR_Delete(const char* name)
 {
@@ -568,41 +506,6 @@ PR_ImportPipe(PROsfd osfd)
 
     return fd;
 }
-
-#ifndef NO_NSPR_10_SUPPORT
-
-/*
- * This function is supposed to be for backward compatibility with
- * nspr 1.0.  Therefore, it still uses the nspr 1.0 error-reporting
- * mechanism -- returns a PRInt32, which is the error code when the call
- * fails.
- *
- * If we need this function in nspr 2.0, it should be changed to
- * return PRStatus, as follows:
- *
- * PR_IMPLEMENT(PRStatus) PR_Stat(const char *name, struct stat *buf)
- * {
- *     PRInt32 rv;
- *
- *     rv = _PR_MD_STAT(name, buf);
- *     if (rv < 0)
- *         return PR_FAILURE;
- *     else
- *         return PR_SUCCESS;
- * }
- *
- * -- wtc, 2/14/97.
- */
-PR_IMPLEMENT(PRInt32)
-PR_Stat(const char* name, struct stat* buf)
-{
-    PRInt32 rv;
-
-    rv = _PR_MD_STAT(name, buf);
-    return rv;
-}
-
-#endif /* ! NO_NSPR_10_SUPPORT */
 
 PR_IMPLEMENT(PRStatus)
 PR_LockFile(PRFileDesc* fd)

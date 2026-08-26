@@ -73,7 +73,6 @@
 #endif
 #endif
 
-#define _PR_HAVE_SYSV_SEMAPHORES
 #define PR_HAVE_SYSV_NAMED_SHARED_MEMORY
 
 #if __FreeBSD_version >= 400014

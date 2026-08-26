@@ -153,7 +153,6 @@ EXTRA_LIBS += $(OS_LIBS)
 OBJS = \
     $(OBJDIR)/prvrsion.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prfdcach.$(OBJ_SUFFIX) \
-    io/$(OBJDIR)/prmwait.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prmapopt.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/priometh.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/pripv6.$(OBJ_SUFFIX) \
@@ -201,14 +200,12 @@ OBJS += \
     io/$(OBJDIR)/prdir.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prfile.$(OBJ_SUFFIX) \
     io/$(OBJDIR)/prio.$(OBJ_SUFFIX) \
-    io/$(OBJDIR)/prsocket.$(OBJ_SUFFIX) \
-    misc/$(OBJDIR)/pripcsem.$(OBJ_SUFFIX)
+    io/$(OBJDIR)/prsocket.$(OBJ_SUFFIX)
 
 ifndef USE_BTHREADS
 OBJS += \
 	threads/$(OBJDIR)/prcthr.$(OBJ_SUFFIX) \
 	threads/$(OBJDIR)/prmon.$(OBJ_SUFFIX) \
-	threads/$(OBJDIR)/prsem.$(OBJ_SUFFIX) \
 	threads/combined/$(OBJDIR)/prucpu.$(OBJ_SUFFIX) \
 	threads/combined/$(OBJDIR)/prucv.$(OBJ_SUFFIX) \
 	threads/combined/$(OBJDIR)/prulock.$(OBJ_SUFFIX) \

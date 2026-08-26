@@ -14,7 +14,54 @@ int _debug_on = 0;
     if (_debug_on)   \
     printf arg
 
-#include "obsolete/prsem.h"
+/* A counting semaphore built on a monitor. */
+typedef struct TestSem {
+    PRMonitor* mon;
+    PRUintn count;
+} TestSem;
+
+static TestSem*
+NewTestSem(PRUintn value)
+{
+    TestSem* sem = PR_NEW(TestSem);
+    if (NULL == sem) {
+        return NULL;
+    }
+    sem->mon = PR_NewMonitor();
+    if (NULL == sem->mon) {
+        PR_DELETE(sem);
+        return NULL;
+    }
+    sem->count = value;
+    return sem;
+}
+
+static void
+WaitTestSem(TestSem* sem)
+{
+    PR_EnterMonitor(sem->mon);
+    while (0 == sem->count) {
+        PR_Wait(sem->mon, PR_INTERVAL_NO_TIMEOUT);
+    }
+    --sem->count;
+    PR_ExitMonitor(sem->mon);
+}
+
+static void
+PostTestSem(TestSem* sem)
+{
+    PR_EnterMonitor(sem->mon);
+    ++sem->count;
+    PR_Notify(sem->mon);
+    PR_ExitMonitor(sem->mon);
+}
+
+static void
+DestroyTestSem(TestSem* sem)
+{
+    PR_DestroyMonitor(sem->mon);
+    PR_DELETE(sem);
+}
 
 PRLock* lock;
 PRMonitor* mon;
@@ -255,17 +302,17 @@ ContextSwitchKK(void)
 static void PR_CALLBACK
 SemaThread(void* argSema)
 {
-    PRSemaphore** sem = (PRSemaphore**)argSema;
+    TestSem** sem = (TestSem**)argSema;
     PRInt32 i, n;
 
     n = count / 2;
     for (i = 0; i < n; i++) {
         DPRINTF(("SemaThread: thread = 0x%lx waiting on sem = 0x%lx\n",
                  PR_GetCurrentThread(), sem[0]));
-        PR_WaitSem(sem[0]);
+        WaitTestSem(sem[0]);
         DPRINTF(("SemaThread: thread = 0x%lx posting on sem = 0x%lx\n",
                  PR_GetCurrentThread(), sem[1]));
-        PR_PostSem(sem[1]);
+        PostTestSem(sem[1]);
     }
 
     PR_EnterMonitor(mon2);
@@ -275,15 +322,15 @@ SemaThread(void* argSema)
     DPRINTF(("SemaThread: thread = 0x%lx exiting\n", PR_GetCurrentThread()));
 }
 
-static PRSemaphore* sem_set1[2];
-static PRSemaphore* sem_set2[2];
+static TestSem* sem_set1[2];
+static TestSem* sem_set2[2];
 
 static void
 SemaContextSwitch(PRThreadScope scope1, PRThreadScope scope2)
 {
     PRThread *t1, *t2;
-    sem_set1[0] = PR_NewSem(1);
-    sem_set1[1] = PR_NewSem(0);
+    sem_set1[0] = NewTestSem(1);
+    sem_set1[1] = NewTestSem(0);
     sem_set2[0] = sem_set1[1];
     sem_set2[1] = sem_set1[0];
 
@@ -318,8 +365,8 @@ SemaContextSwitch(PRThreadScope scope1, PRThreadScope scope2)
     }
     PR_ExitMonitor(mon2);
 
-    PR_DestroySem(sem_set1[0]);
-    PR_DestroySem(sem_set1[1]);
+    DestroyTestSem(sem_set1[0]);
+    DestroyTestSem(sem_set1[1]);
 }
 
 static void

@@ -12,7 +12,6 @@
 
 #include "prlog.h"
 #include "primpl.h"
-#include "prpdce.h"
 
 #include <pthread.h>
 #include <unistd.h>
@@ -770,15 +769,6 @@ PR_UnblockInterrupt(void)
 } /* PR_UnblockInterrupt */
 
 PR_IMPLEMENT(PRStatus)
-PR_Yield(void)
-{
-    static PRBool warning = PR_TRUE;
-    if (warning)
-        warning = _PR_Obsolete("PR_Yield()", "PR_Sleep(PR_INTERVAL_NO_WAIT)");
-    return PR_Sleep(PR_INTERVAL_NO_WAIT);
-}
-
-PR_IMPLEMENT(PRStatus)
 PR_Sleep(PRIntervalTime ticks)
 {
     PRStatus rv = PR_SUCCESS;
@@ -1064,7 +1054,6 @@ PR_Cleanup(void)
 
         _PR_MD_EARLY_CLEANUP();
 
-        _PR_CleanupMW();
         _PR_CleanupTime();
         _PR_CleanupDtoa();
         _PR_CleanupCallOnce();

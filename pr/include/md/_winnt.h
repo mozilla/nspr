@@ -115,8 +115,7 @@ struct _MDCPU {
     int unused;
 };
 
-enum _MDIOModel { _MD_BlockingIO = 0x38,
-                  _MD_MultiWaitIO = 0x49 };
+enum _MDIOModel { _MD_BlockingIO = 0x38 };
 
 typedef struct _MDOverlapped {
     OVERLAPPED overlapped; /* Used for async I/O */
@@ -129,16 +128,6 @@ typedef struct _MDOverlapped {
                                      * is embedded in the _MDThread
                                      * structure.
                                      */
-        struct {
-            PRCList links;           /* for group->io_ready list */
-            struct PRRecvWait* desc; /* For multiwait I/O, this structure
-                                      * is associated with a PRRecvWait
-                                      * structure.
-                                      */
-            struct PRWaitGroup* group;
-            struct TimerEvent* timer;
-            DWORD error;
-        } mw;
     } data;
 } _MDOverlapped;
 
@@ -575,13 +564,5 @@ extern PRStatus _MD_CloseFileMap(struct PRFileMap* fmap);
 
 extern PRStatus _MD_SyncMemMap(PRFileDesc* fd, void* addr, PRUint32 len);
 #define _MD_SYNC_MEM_MAP _MD_SyncMemMap
-
-/* --- Named semaphores stuff --- */
-#define _PR_HAVE_NAMED_SEMAPHORES
-#define _MD_OPEN_SEMAPHORE _PR_MD_OPEN_SEMAPHORE
-#define _MD_WAIT_SEMAPHORE _PR_MD_WAIT_SEMAPHORE
-#define _MD_POST_SEMAPHORE _PR_MD_POST_SEMAPHORE
-#define _MD_CLOSE_SEMAPHORE _PR_MD_CLOSE_SEMAPHORE
-#define _MD_DELETE_SEMAPHORE(name) PR_SUCCESS /* no op */
 
 #endif /* nspr_win32_defs_h___ */

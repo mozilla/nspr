@@ -29,13 +29,6 @@
 typedef struct PRSegment PRSegment;
 
 #include "md/prosdep.h"
-#include "obsolete/probslet.h"
-
-#ifdef _PR_HAVE_POSIX_SEMAPHORES
-#include <semaphore.h>
-#elif defined(_PR_HAVE_SYSV_SEMAPHORES)
-#include <sys/sem.h>
-#endif
 
 #ifdef HAVE_SYSCALL
 #include <sys/syscall.h>
@@ -1046,23 +1039,6 @@ extern char* _PR_MD_READ_DIR(_MDDir* md, PRIntn flags);
 extern PRInt32 _PR_MD_CLOSE_DIR(_MDDir* md);
 #define _PR_MD_CLOSE_DIR _MD_CLOSE_DIR
 
-/* Named semaphores related */
-extern PRSem* _PR_MD_OPEN_SEMAPHORE(const char* osname, PRIntn flags,
-                                    PRIntn mode, PRUintn value);
-#define _PR_MD_OPEN_SEMAPHORE _MD_OPEN_SEMAPHORE
-
-extern PRStatus _PR_MD_WAIT_SEMAPHORE(PRSem* sem);
-#define _PR_MD_WAIT_SEMAPHORE _MD_WAIT_SEMAPHORE
-
-extern PRStatus _PR_MD_POST_SEMAPHORE(PRSem* sem);
-#define _PR_MD_POST_SEMAPHORE _MD_POST_SEMAPHORE
-
-extern PRStatus _PR_MD_CLOSE_SEMAPHORE(PRSem* sem);
-#define _PR_MD_CLOSE_SEMAPHORE _MD_CLOSE_SEMAPHORE
-
-extern PRStatus _PR_MD_DELETE_SEMAPHORE(const char* osname);
-#define _PR_MD_DELETE_SEMAPHORE _MD_DELETE_SEMAPHORE
-
 /* I/O related */
 extern void _PR_MD_INIT_FILEDESC(PRFileDesc* fd);
 #define _PR_MD_INIT_FILEDESC _MD_INIT_FILEDESC
@@ -1499,37 +1475,6 @@ struct PRMonitor {
                             * (PR_NotifyAll). */
 };
 
-/************************************************************************/
-
-struct PRSemaphore {
-#if defined(_PR_BTHREADS)
-    sem_id sem;
-    int32 benaphoreCount;
-#else
-    PRCondVar* cvar;  /* associated lock and condition variable queue */
-    PRUintn count;    /* the value of the counting semaphore */
-    PRUint32 waiters; /* threads waiting on the semaphore */
-#if defined(_PR_PTHREADS)
-#else  /* defined(_PR_PTHREADS) */
-    _MDSemaphore md;
-#endif /* defined(_PR_PTHREADS) */
-#endif /* defined(_PR_BTHREADS) */
-};
-
-/*************************************************************************/
-
-struct PRSem {
-#ifdef _PR_HAVE_POSIX_SEMAPHORES
-    sem_t* sem;
-#elif defined(_PR_HAVE_SYSV_SEMAPHORES)
-    int semid;
-#elif defined(WIN32)
-    HANDLE sem;
-#else
-    PRInt8 notused;
-#endif
-};
-
 /*************************************************************************/
 
 struct PRStackStr {
@@ -1811,11 +1756,9 @@ extern void _PR_InitAtomic(void);
 extern void _PR_InitCPUs(void);
 extern void _PR_InitDtoa(void);
 extern void _PR_InitTime(void);
-extern void _PR_InitMW(void);
 extern void _PR_InitRWLocks(void);
 extern void _PR_CleanupThread(PRThread* thread);
 extern void _PR_CleanupCallOnce(void);
-extern void _PR_CleanupMW(void);
 extern void _PR_CleanupTime(void);
 extern void _PR_CleanupDtoa(void);
 extern void _PR_ShutdownLinker(void);
@@ -2084,8 +2027,7 @@ extern PRFileMap* _md_ImportFileMapFromString(const char* fmstring);
  * Types of NSPR IPC objects
  */
 typedef enum {
-    _PRIPCSem, /* semaphores */
-    _PRIPCShm  /* shared memory segments */
+    _PRIPCShm /* shared memory segments */
 } _PRIPCType;
 
 /*

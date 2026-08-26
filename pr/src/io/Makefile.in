@@ -16,7 +16,6 @@ include $(topsrcdir)/config/config.mk
 
 CSRCS = \
     prfdcach.c \
-    prmwait.c \
     priometh.c \
     pripv6.c \
 	prmapopt.c \

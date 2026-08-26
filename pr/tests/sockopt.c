@@ -6,7 +6,6 @@
 #include "prio.h"
 #include "prinit.h"
 #include "prprf.h"
-#include "obsolete/probslet.h"
 
 #include "plerror.h"
 
