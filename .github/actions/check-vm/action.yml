@@ -1,0 +1,95 @@
+name: Build and test NSPR in a VM
+description: Build and test NSPR on a tier-3 platform that has no GitHub-hosted runner.
+
+inputs:
+  platform:
+    description: Platform to build on; one of freebsd, openbsd, netbsd, solaris.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Generate VM scripts
+      id: prep
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+      run: |
+        case "$PLATFORM" in
+        freebsd) cc=clang gcov='llvm-cov gcov'
+                 install='pkg install -y gmake llvm' ;;
+        openbsd) cc=clang gcov='llvm-cov gcov'
+                 install='pkg_add -I gmake' ;;
+        netbsd)  cc=gcc gcov=gcov
+                 install='/usr/sbin/pkg_add pkgin && /usr/pkg/bin/pkgin -y update && /usr/pkg/bin/pkgin -y install gmake' ;;
+        # Solaris pkg exits 4 when there is nothing to do.
+        solaris) cc=gcc gcov=gcov
+                 install='pkg install --accept developer/build/gnu-make || [ $? -eq 4 ]' ;;
+        *) echo "::error::Unsupported platform: $PLATFORM"; exit 1 ;;
+        esac
+
+        # Runs as root.
+        cat > prepare.sh <<EOF
+        set -ex
+        $install
+        EOF
+
+        # Runs as the unprivileged user, in the synced working directory.
+        cat > run.sh <<EOF
+        set -ex
+        export PATH="/usr/local/bin:/usr/pkg/bin:\$PATH"
+        export CC=$cc
+        MAKE=gmake NSPR_COVERAGE=1 .github/scripts/build-and-test.sh
+        cd target
+        mkdir ../coverage
+        find . -name '*.gcno' -exec $gcov -pb {} + >/dev/null || true
+        mv *.gcov ../coverage/
+        cd ..
+        rm -rf target
+        EOF
+
+        for script in prepare run; do
+          {
+            echo "$script<<SCRIPT_EOF"
+            cat "$script.sh"
+            echo SCRIPT_EOF
+          } >> "$GITHUB_OUTPUT"
+        done
+
+    - if: ${{ inputs.platform == 'freebsd' }}
+      uses: vmactions/freebsd-vm@f0552d3b69211736abd97f02ff3d4674c56b73b1 # v1.5.5
+      with:
+        usesh: true
+        copyback: true
+        cache-after-prepare: true
+        prepare: ${{ steps.prep.outputs.prepare }}
+        run: ${{ steps.prep.outputs.run }}
+
+    - if: ${{ inputs.platform == 'openbsd' }}
+      uses: vmactions/openbsd-vm@86cdc08415d9d0865267e686561e276c52d62530 # v1.4.7
+      with:
+        usesh: true
+        copyback: true
+        cache-after-prepare: true
+        prepare: ${{ steps.prep.outputs.prepare }}
+        run: ${{ steps.prep.outputs.run }}
+
+    - if: ${{ inputs.platform == 'netbsd' }}
+      uses: vmactions/netbsd-vm@6334c835de4c04a59fe59f0f8f071e02a2f0bab3 # v1.4.7
+      with:
+        usesh: true
+        copyback: true
+        cache-after-prepare: true
+        prepare: ${{ steps.prep.outputs.prepare }}
+        run: ${{ steps.prep.outputs.run }}
+
+    - if: ${{ inputs.platform == 'solaris' }}
+      uses: vmactions/solaris-vm@96d8d976f9e67d82ec6c7e8ce9c1060731f9e21c # v1.3.9
+      with:
+        # Selects the gcc image variant, not a version; the default has no gcc.
+        release: "11.4-gcc"
+        usesh: true
+        copyback: true
+        cache-after-prepare: true
+        prepare: ${{ steps.prep.outputs.prepare }}
+        run: ${{ steps.prep.outputs.run }}
