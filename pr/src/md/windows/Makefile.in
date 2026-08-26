@@ -18,7 +18,6 @@ ifeq (,$(filter-out WIN95 WINCE WINMO, $(OS_TARGET)))
 CSRCS =          \
     ntmisc.c \
     ntsec.c   \
-    ntsem.c   \
     ntinrval.c \
     ntgc.c \
 	w95thred.c \
@@ -36,7 +35,6 @@ CSRCS =          \
     ntdllmn.c \
     ntmisc.c \
     ntsec.c   \
-    ntsem.c   \
     ntinrval.c \
     ntgc.c \
     ntthread.c \
