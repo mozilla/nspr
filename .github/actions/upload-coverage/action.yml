@@ -15,7 +15,22 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+    # Callers upload even when a test failed, so a build that never produced
+    # data would otherwise trip fail_ci_if_error with a confusing error.
+    - name: Look for coverage data
+      id: check
+      shell: bash
+      env:
+        FLAGS: ${{ inputs.flags }}
+      run: |
+        if [ -n "$(find . -name '*.gcda' -print -quit)" ]; then
+          echo "found=true" >>"$GITHUB_OUTPUT"
+        else
+          echo "::warning::No coverage data for $FLAGS; skipping upload"
+        fi
+
+    - if: steps.check.outputs.found == 'true'
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         gcov_executable: ${{ inputs.gcov }}
         flags: ${{ inputs.flags }}

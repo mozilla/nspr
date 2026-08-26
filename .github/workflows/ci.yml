@@ -57,7 +57,8 @@ jobs:
           cc: ${{ matrix.cc }}
           coverage: ${{ matrix.coverage }}
 
-      - if: matrix.coverage
+      # Upload even when a test failed; the tests that ran still wrote data.
+      - if: ${{ !cancelled() && matrix.coverage }}
         uses: ./.github/actions/upload-coverage
         with:
           gcov: ${{ matrix.gcov || 'gcov' }}
@@ -168,7 +169,8 @@ jobs:
           enable-64bit: "false"
           coverage: "true"
 
-      - uses: ./.github/actions/upload-coverage
+      - if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-coverage
         with:
           flags: ubuntu-latest-gcc-x86
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
@@ -263,10 +265,12 @@ jobs:
           "$srcdir/pr/tests/runtests.sh" ../../dist
 
       - name: Put mingw gcov on PATH for Codecov
+        if: ${{ !cancelled() }}
         shell: pwsh
         run: Add-Content $env:GITHUB_PATH 'C:\msys64\ucrt64\bin'
 
-      - uses: ./.github/actions/upload-coverage
+      - if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-coverage
         with:
           flags: windows-mingw
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
