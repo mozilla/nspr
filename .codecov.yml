@@ -4,6 +4,7 @@ ignore:
   - "lib/tests"
 
 fixes:
+  - "D:/a/nspr/nspr/::"
   - "**/pr/::pr/"
   - "**/lib/::lib/"
   - "**/config/::config/"
