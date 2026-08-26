@@ -184,6 +184,13 @@ jobs:
             bits: --enable-64bit
           - arch: x86
             bits: ""
+    env:
+      MSYSTEM: MSYS
+      CHERE_INVOKING: 1
+      MSYS2_PATH_TYPE: inherit
+    defaults:
+      run:
+        shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] configure needs a POSIX shell.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -195,38 +202,30 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - name: Install MozillaBuild
-        shell: pwsh
+      - name: Install build tools
         run: |
-          $url = 'https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe'
-          Invoke-WebRequest -Uri $url -OutFile mb.exe
-          Start-Process -FilePath .\mb.exe -ArgumentList '/S' -Wait
+          pacman -Sy --noconfirm
+          pacman -S --needed --noconfirm make nsinstall
 
-      - name: Write build script
-        shell: bash
+      - name: Configure, build and test
         env:
           ARCH: ${{ matrix.arch }}
           BITS: ${{ matrix.bits }}
         run: |
-          cat > build.sh <<EOF
-          set -e
           # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
           rm -f /usr/bin/link.exe
-          export PATH="\$(cygpath -u "\$VCToolsInstallDir")bin/Hostx64/$ARCH:\$PATH"
+          export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/$ARCH:$PATH"
+          export MAKEFLAGS="-j$NUMBER_OF_PROCESSORS"
+          srcdir=$PWD
           mkdir target
           cd target
-          ../configure $BITS --enable-win32-target=WIN95 --prefix="\$PWD/dist"
-          make -j"\$NUMBER_OF_PROCESSORS"
-          make -C pr/tests -j"\$NUMBER_OF_PROCESSORS"
+          # Word splitting of $BITS is intended.
+          # shellcheck disable=SC2086
+          "$srcdir/configure" $BITS --enable-win32-target=WIN95 --prefix="$PWD/dist"
+          make
+          make -C pr/tests
           cd pr/tests
-          ../../../pr/tests/runtests.sh ../../dist
-          EOF
-
-      - name: Build and test
-        shell: pwsh
-        env:
-          MOZILLABUILD: C:\mozilla-build\
-        run: C:\mozilla-build\msys2\msys2_shell.cmd -no-start -defterm -full-path -here -c "bash build.sh"
+          "$srcdir/pr/tests/runtests.sh" ../../dist
 
   # MSVC has no gcov, so mingw is the only Windows toolchain here that can
   # produce coverage.
