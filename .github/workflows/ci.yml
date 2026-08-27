@@ -14,55 +14,119 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  unix:
-    name: ${{ matrix.os }}${{ matrix.cc && format(' ({0})', matrix.cc) || '' }}
-    runs-on: ${{ matrix.os }}
+  unix-build:
+    name: NSPR build / ${{ matrix.platform.os }}${{ matrix.platform.cc && format(' ({0}{1})', matrix.platform.cc, matrix.platform.arch == 'ia32' && ', 32-bit' || '') || '' }}
+    runs-on: ${{ matrix.platform.os }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
+        platform: &unix-platforms
+          - id: ubuntu-latest-gcc
+            os: ubuntu-latest
             cc: gcc
             coverage: true
+          - id: ubuntu-latest-gcc-x86
+            os: ubuntu-latest
+            cc: gcc
+            arch: ia32
+            coverage: true
           # Left uninstrumented, so one entry still builds the default optimized config.
-          - os: ubuntu-latest
+          - id: ubuntu-latest-clang
+            os: ubuntu-latest
             cc: clang
-          - os: ubuntu-24.04-arm
+          - id: ubuntu-24.04-arm-clang
+            os: ubuntu-24.04-arm
             cc: clang
             coverage: true
             gcov: llvm-gcov
-          - os: macos-latest
+          - id: macos-latest
+            os: macos-latest
             coverage: true
-          - os: macos-15-intel
+          - id: macos-15-intel
+            os: macos-15-intel
             coverage: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # macOS ships LLVM's gcov as gcov, but for clang on Linux the subcommand
-      # has to be wrapped: Codecov takes a single gcov executable.
+      - name: Install platform dependencies
+        if: matrix.platform.arch == 'ia32'
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
+
+      - uses: ./.github/actions/build-and-test
+        with:
+          cc: ${{ matrix.platform.cc }}
+          cflags: ${{ matrix.platform.arch == 'ia32' && '-m32' || '' }}
+          ldflags: ${{ matrix.platform.arch == 'ia32' && '-m32' || '' }}
+          enable-64bit: ${{ matrix.platform.arch != 'ia32' }}
+          coverage: ${{ matrix.platform.coverage }}
+          run-tests: "false"
+
+      # Archiving preserves executable bits, which Actions artifacts do not.
+      - name: Archive build
+        run: tar -cf target.tar target
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nspr-${{ matrix.platform.id }}
+          path: target.tar
+          retention-days: 1
+
+  unix-tests:
+    name: ${{ matrix.suite }} tests / ${{ matrix.platform.os }}${{ matrix.platform.cc && format(' ({0}{1})', matrix.platform.cc, matrix.platform.arch == 'ia32' && ', 32-bit' || '') || '' }}
+    needs: unix-build
+    if: ${{ !cancelled() }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: &test-suites [NSPR, NSS]
+        platform: *unix-platforms
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nspr-${{ matrix.platform.id }}
+
+      - name: Install platform dependencies
+        if: matrix.suite == 'NSPR' && matrix.platform.arch == 'ia32'
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
+
+      - name: Extract NSPR build
+        run: tar -xf target.tar
+
+      - name: Run NSPR tests
+        if: matrix.suite == 'NSPR'
+        working-directory: target/pr/tests
+        run: ../../../pr/tests/runtests.sh ../../dist
+
+      - uses: ./.github/actions/build-and-test-nss
+        if: matrix.suite == 'NSS'
+        with:
+          cc: ${{ matrix.platform.cc }}
+          target: ${{ matrix.platform.arch }}
+
+      # macOS's gcov already understands clang output. On Linux, Codecov needs
+      # a single executable that dispatches to llvm-cov's gcov subcommand.
       - name: Install llvm-cov shim
-        if: matrix.gcov
+        if: ${{ !cancelled() && matrix.platform.gcov }}
         run: |
-          sudo apt-get update && sudo apt-get install -y llvm
+          sudo apt-get update
+          sudo apt-get install -y llvm
           llvm_cov=$(command -v llvm-cov || command -v "llvm-cov-$(clang -dumpversion | cut -d. -f1)" || true)
           [ -n "$llvm_cov" ] || { echo "::error::no llvm-cov found"; exit 1; }
           printf '#!/bin/sh\nexec %s gcov "$@"\n' "$llvm_cov" >"$RUNNER_TEMP/llvm-gcov"
           chmod +x "$RUNNER_TEMP/llvm-gcov"
-          echo "$RUNNER_TEMP" >>"$GITHUB_PATH"
 
-      - uses: ./.github/actions/build-and-test
-        with:
-          cc: ${{ matrix.cc }}
-          coverage: ${{ matrix.coverage }}
-
-      # Upload even when a test failed; the tests that ran still wrote data.
-      - if: ${{ !cancelled() && matrix.coverage }}
+      - if: ${{ !cancelled() && matrix.platform.coverage }}
         uses: ./.github/actions/upload-coverage
         with:
-          gcov: ${{ matrix.gcov || 'gcov' }}
-          flags: ${{ matrix.os }}${{ matrix.cc && format('-{0}', matrix.cc) || '' }}
+          gcov: ${{ matrix.platform.gcov && format('{0}/llvm-gcov', runner.temp) || 'gcov' }}
+          flags: ${{ matrix.platform.id }}
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   warnings-as-errors:
@@ -150,42 +214,13 @@ jobs:
           done
           exit $rval
 
-  linux-x86:
-    name: ubuntu-latest (gcc, 32-bit)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install 32-bit toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
-
-      - uses: ./.github/actions/build-and-test
-        with:
-          cc: gcc
-          cflags: -m32
-          ldflags: -m32
-          enable-64bit: "false"
-          coverage: "true"
-
-      - if: ${{ !cancelled() }}
-        uses: ./.github/actions/upload-coverage
-        with:
-          flags: ubuntu-latest-gcc-x86
-          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
-
-  windows:
-    name: windows-latest (${{ matrix.arch }})
+  windows-build:
+    name: NSPR build / windows-latest (${{ matrix.arch }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arch: x64
-            bits: --enable-64bit
-          - arch: x86
-            bits: ""
+        arch: &windows-architectures [x64, x86]
     env:
       MSYSTEM: MSYS
       CHERE_INVOKING: 1
@@ -209,10 +244,10 @@ jobs:
           pacman -Sy --noconfirm
           pacman -S --needed --noconfirm make nsinstall
 
-      - name: Configure, build and test
+      - name: Configure and build
         env:
           ARCH: ${{ matrix.arch }}
-          BITS: ${{ matrix.bits }}
+          BITS: ${{ matrix.arch == 'x64' && '--enable-64bit' || '' }}
         run: |
           # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
           rm -f /usr/bin/link.exe
@@ -226,8 +261,55 @@ jobs:
           "$srcdir/configure" $BITS --enable-win32-target=WIN95 --prefix="$PWD/dist"
           make
           make -C pr/tests
-          cd pr/tests
-          "$srcdir/pr/tests/runtests.sh" ../../dist
+
+      # Archiving preserves executable bits and filename case.
+      - name: Archive build
+        run: tar -cf target.tar target
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nspr-windows-${{ matrix.arch }}
+          path: target.tar
+          retention-days: 1
+
+  windows-tests:
+    name: ${{ matrix.suite }} tests / windows-latest (${{ matrix.arch }})
+    needs: windows-build
+    if: ${{ !cancelled() }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: *test-suites
+        arch: *windows-architectures
+    env:
+      MSYSTEM: MSYS
+      CHERE_INVOKING: 1
+      MSYS2_PATH_TYPE: inherit
+    defaults:
+      run:
+        shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] Tests need a POSIX shell.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nspr-windows-${{ matrix.arch }}
+
+      - name: Extract NSPR build
+        run: tar -xf target.tar
+
+      - name: Run NSPR tests
+        if: matrix.suite == 'NSPR'
+        working-directory: target/pr/tests
+        run: ../../../pr/tests/runtests.sh ../../dist
+
+      - uses: ./.github/actions/build-and-test-nss
+        if: matrix.suite == 'NSS'
+        with:
+          target: ${{ matrix.arch == 'x86' && 'ia32' || 'x64' }}
 
   # MSVC has no gcov, so mingw is the only Windows toolchain here that can
   # produce coverage.

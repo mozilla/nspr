@@ -1,5 +1,5 @@
 name: Build and test NSPR
-description: Configure and build NSPR out of tree, and optionally build and run pr/tests.
+description: Configure and build NSPR out of tree, and optionally build or run pr/tests.
 
 inputs:
   cc:
@@ -24,7 +24,10 @@ inputs:
     description: Whether to instrument the build for coverage.
     default: "false"
   tests:
-    description: Whether to build and run pr/tests.
+    description: Whether to build pr/tests.
+    default: "true"
+  run-tests:
+    description: Whether to run pr/tests after building them.
     default: "true"
 
 runs:
@@ -87,7 +90,7 @@ runs:
         make -C target/pr/tests $TEST_MAKE_ARGS
 
     - name: Run tests
-      if: inputs.tests == 'true'
+      if: inputs.tests == 'true' && inputs.run-tests == 'true'
       shell: bash
       working-directory: target/pr/tests
       run: ../../../pr/tests/runtests.sh ../../dist

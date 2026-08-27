@@ -1,0 +1,111 @@
+name: Build and test NSS
+description: Build and test NSS's default branch against the NSPR build in target/dist.
+
+inputs:
+  cc:
+    description: Compiler to use; empty lets NSS pick the platform default.
+    default: ""
+  target:
+    description: NSS target architecture; empty uses the host architecture.
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout NSS
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: mozilla/nss
+        path: nss
+        persist-credentials: false
+
+    - name: Install Linux build dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        NSS_TARGET: ${{ inputs.target }}
+      run: |
+        if [ "$NSS_TARGET" = ia32 ]; then
+          sudo dpkg --add-architecture i386
+        fi
+        sudo apt-get update
+        packages=(gyp ninja-build zlib1g-dev)
+        if [ "$NSS_TARGET" = ia32 ]; then
+          packages+=(g++-multilib zlib1g-dev:i386)
+        fi
+        sudo apt-get install -y "${packages[@]}"
+
+    - name: Install Windows build dependencies
+      if: runner.os == 'Windows'
+      shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] NSS needs a POSIX shell.
+      run: |
+        pacman -Sy --noconfirm
+        pacman -S --needed --noconfirm nsinstall
+
+    - name: Install gyp-next
+      if: runner.os != 'Linux'
+      shell: ${{ runner.os == 'Windows' && 'C:\msys64\usr\bin\bash.exe -leo pipefail {0}' || 'bash' }} # zizmor: ignore[misfeature] NSS needs a POSIX shell.
+      run: pipx install gyp-next==0.22.2
+
+    - name: Set up MSVC
+      if: runner.os == 'Windows'
+      # The Mozilla org allowlist requires "ilammy/msvc-dev-cmd@v1*".
+      uses: ilammy/msvc-dev-cmd@v1 # zizmor: ignore[unpinned-uses]
+      with:
+        arch: ${{ inputs.target == 'ia32' && 'x86' || inputs.target || 'x64' }}
+
+    - name: Build NSS
+      shell: ${{ runner.os == 'Windows' && 'C:\msys64\usr\bin\bash.exe -leo pipefail {0}' || 'bash' }} # zizmor: ignore[misfeature] NSS needs a POSIX shell.
+      env:
+        NSS_CC: ${{ inputs.cc }}
+        NSS_TARGET: ${{ inputs.target }}
+      run: |
+        repo=$(pwd -P)
+        nspr_lib_dir="$repo/target/dist/lib"
+        nss_nspr_lib_dir="$nspr_lib_dir"
+        mkdir -p "$repo/dist/Debug/lib/pkgconfig"
+        cp "$repo/target/config/nspr.pc" "$repo/dist/Debug/lib/pkgconfig/"
+
+        if [ "$RUNNER_OS" = Windows ]; then
+          nss_nspr_lib_dir="$repo/target/nss-nspr/lib"
+          mkdir -p "$nss_nspr_lib_dir"
+          for lib in nspr4 plc4 plds4; do
+            cp "$nspr_lib_dir/$lib.lib" "$nss_nspr_lib_dir/lib$lib.lib"
+            cp "$nspr_lib_dir/$lib.dll" "$repo/dist/Debug/lib/"
+          done
+
+          msvc_bin=$(dirname "$(command -v cl.exe)")
+          export PATH="$msvc_bin:$PATH"
+
+          # Work around NSS's coreconf/msvc.sh bug with MSVC 18 (VS 2026).
+          if [ "${VSCMD_VER%%.*}" = 18 ]; then
+            export VSPATH="$VSINSTALLDIR"
+            export GYP_MSVS_OVERRIDE_PATH="$VSINSTALLDIR"
+            export GYP_MSVS_VERSION=2026
+          fi
+        else
+          cp "$nspr_lib_dir"/lib{nspr4,plc4,plds4}.* "$repo/dist/Debug/lib/"
+        fi
+
+        unset CC CCC CXX
+        build_args=()
+        [ -z "$NSS_CC" ] || build_args+=("--$NSS_CC")
+        [ -z "$NSS_TARGET" ] || build_args+=(--target="$NSS_TARGET")
+
+        cd "$repo/nss"
+        CFLAGS='' CXXFLAGS='' LDFLAGS='' ./build.sh "${build_args[@]}" \
+          --with-nspr="$repo/target/dist/include/nspr:$nss_nspr_lib_dir"
+
+    - name: Test NSS
+      shell: ${{ runner.os == 'Windows' && 'C:\msys64\usr\bin\bash.exe -leo pipefail {0}' || 'bash' }} # zizmor: ignore[misfeature] NSS needs a POSIX shell.
+      working-directory: nss/tests
+      env:
+        DOMSUF: local
+        HOST: nss
+      run: |
+        if [ "$RUNNER_OS" = Windows ]; then
+          printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" >>/c/Windows/System32/drivers/etc/hosts
+        else
+          printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" | sudo tee -a /etc/hosts >/dev/null
+        fi
+        ./all.sh
