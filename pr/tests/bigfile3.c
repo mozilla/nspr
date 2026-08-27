@@ -31,6 +31,7 @@ main(int argc, char** argv)
 #ifdef _WIN32
     HANDLE hFile;
     LARGE_INTEGER li;
+    DWORD dwBytes;
 #endif /* _WIN32 */
 
     LL_I2L(offset, 1);
@@ -51,11 +52,11 @@ main(int argc, char** argv)
     }
     PR_ASSERT(li.QuadPart == offset);
     strcpy(buf, MESSAGE);
-    if (WriteFile(hFile, buf, sizeof(buf), &nbytes, NULL) == 0) {
+    if (WriteFile(hFile, buf, sizeof(buf), &dwBytes, NULL) == 0) {
         fprintf(stderr, "WriteFile failed\n");
         exit(1);
     }
-    PR_ASSERT(nbytes == sizeof(buf));
+    PR_ASSERT(dwBytes == sizeof(buf));
     if (CloseHandle(hFile) == 0) {
         fprintf(stderr, "CloseHandle failed\n");
         exit(1);

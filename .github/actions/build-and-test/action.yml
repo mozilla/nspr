@@ -15,14 +15,17 @@ inputs:
     description: LDFLAGS for the build.
     default: ""
   configure-args:
-    description: Extra configure arguments; --enable-64bit and --prefix are always passed.
+    description: Extra configure arguments; --prefix is always passed.
     default: ""
+  enable-64bit:
+    description: Whether to pass --enable-64bit.
+    default: "true"
+  coverage:
+    description: Whether to instrument the build for coverage.
+    default: "false"
   tests:
     description: Whether to build and run pr/tests.
     default: "true"
-  test-make-args:
-    description: Extra arguments for the pr/tests make.
-    default: ""
 
 runs:
   using: composite
@@ -35,7 +38,14 @@ runs:
         CFLAGS: ${{ inputs.cflags }}
         CXXFLAGS: ${{ inputs.cxxflags }}
         LDFLAGS: ${{ inputs.ldflags }}
+        COVERAGE: ${{ inputs.coverage }}
       run: |
+        if [ "$COVERAGE" = true ]; then
+          cov="-O0 -g --coverage -fprofile-update=atomic"
+          CFLAGS="$cov${CFLAGS:+ $CFLAGS}"
+          CXXFLAGS="$cov${CXXFLAGS:+ $CXXFLAGS}"
+          LDFLAGS="--coverage${LDFLAGS:+ $LDFLAGS}"
+        fi
         {
           echo "MAKEFLAGS=-j$(getconf _NPROCESSORS_ONLN)"
           echo "CC=$CC"
@@ -48,21 +58,29 @@ runs:
       shell: bash
       env:
         CONFIGURE_ARGS: ${{ inputs.configure-args }}
+        ENABLE_64BIT: ${{ inputs.enable-64bit }}
+        COVERAGE: ${{ inputs.coverage }}
       run: |
         # Configure by absolute path, so VPATH and the source paths gcov records are absolute, too.
         srcdir=$PWD
+        if [ "$ENABLE_64BIT" = true ]; then
+          CONFIGURE_ARGS="--enable-64bit $CONFIGURE_ARGS"
+        fi
+        if [ "$COVERAGE" = true ]; then
+          CONFIGURE_ARGS="--enable-debug $CONFIGURE_ARGS"
+        fi
         mkdir target
         cd target
         # Word splitting of $CONFIGURE_ARGS is intended.
         # shellcheck disable=SC2086
-        "$srcdir/configure" --enable-64bit $CONFIGURE_ARGS --prefix="$PWD/dist"
+        "$srcdir/configure" $CONFIGURE_ARGS --prefix="$PWD/dist"
         make
 
     - name: Build tests
       if: inputs.tests == 'true'
       shell: bash
       env:
-        TEST_MAKE_ARGS: ${{ inputs.test-make-args }}
+        TEST_MAKE_ARGS: ${{ inputs.coverage == 'true' && 'XCFLAGS=--coverage' || '' }}
       run: |
         # Word splitting of $TEST_MAKE_ARGS is intended.
         # shellcheck disable=SC2086

@@ -31,6 +31,7 @@ main(int argc, char** argv)
 #ifdef _WIN32
     HANDLE hFile;
     LARGE_INTEGER li;
+    DWORD dwBytes;
 #endif /* _WIN32 */
 
     LL_I2L(offset, 1);
@@ -74,11 +75,11 @@ main(int argc, char** argv)
         exit(1);
     }
     PR_ASSERT(li.QuadPart == offset);
-    if (ReadFile(hFile, buf, sizeof(buf), &nbytes, NULL) == 0) {
+    if (ReadFile(hFile, buf, sizeof(buf), &dwBytes, NULL) == 0) {
         fprintf(stderr, "ReadFile failed\n");
         exit(1);
     }
-    PR_ASSERT(nbytes == sizeof(buf));
+    PR_ASSERT(dwBytes == sizeof(buf));
     if (strcmp(buf, MESSAGE)) {
         fprintf(stderr, "corrupt data:$%s$\n", buf);
         exit(1);

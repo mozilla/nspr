@@ -55,19 +55,14 @@ jobs:
       - uses: ./.github/actions/build-and-test
         with:
           cc: ${{ matrix.cc }}
-          cflags: ${{ matrix.coverage && '-O0 -g --coverage -fprofile-update=atomic' || '' }}
-          cxxflags: ${{ matrix.coverage && '-O0 -g --coverage -fprofile-update=atomic' || '' }}
-          ldflags: ${{ matrix.coverage && '--coverage' || '' }}
-          configure-args: ${{ matrix.coverage && '--enable-debug' || '' }}
-          test-make-args: ${{ matrix.coverage && 'XCFLAGS=--coverage' || '' }}
+          coverage: ${{ matrix.coverage }}
 
-      - name: Upload coverage to Codecov
-        if: matrix.coverage
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      # Upload even when a test failed; the tests that ran still wrote data.
+      - if: ${{ !cancelled() && matrix.coverage }}
+        uses: ./.github/actions/upload-coverage
         with:
-          gcov_executable: ${{ matrix.gcov || 'gcov' }}
+          gcov: ${{ matrix.gcov || 'gcov' }}
           flags: ${{ matrix.os }}${{ matrix.cc && format('-{0}', matrix.cc) || '' }}
-          fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   warnings-as-errors:
@@ -155,40 +150,127 @@ jobs:
           done
           exit $rval
 
-  windows:
-    name: windows-latest
-    runs-on: windows-latest
+  linux-x86:
+    name: ubuntu-latest (gcc, 32-bit)
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install MozillaBuild
-        shell: pwsh
-        run: |
-          $url = 'https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe'
-          Invoke-WebRequest -Uri $url -OutFile mb.exe
-          Start-Process -FilePath .\mb.exe -ArgumentList '/S' -Wait
+      - name: Install 32-bit toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
 
-      - name: Write build script
-        shell: bash
+      - uses: ./.github/actions/build-and-test
+        with:
+          cc: gcc
+          cflags: -m32
+          ldflags: -m32
+          enable-64bit: "false"
+          coverage: "true"
+
+      - if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-coverage
+        with:
+          flags: ubuntu-latest-gcc-x86
+          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
+
+  windows:
+    name: windows-latest (${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            bits: --enable-64bit
+          - arch: x86
+            bits: ""
+    env:
+      MSYSTEM: MSYS
+      CHERE_INVOKING: 1
+      MSYS2_PATH_TYPE: inherit
+    defaults:
+      run:
+        shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] configure needs a POSIX shell.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # TODO: Would like to pin this, but the Mozilla org allowlist requires "ilammy/msvc-dev-cmd@v1*".
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1 # zizmor: ignore[unpinned-uses]
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Install build tools
         run: |
-          cat > build.sh <<'EOF'
-          set -e
-          export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/x64:$PATH"
+          pacman -Sy --noconfirm
+          pacman -S --needed --noconfirm make nsinstall
+
+      - name: Configure, build and test
+        env:
+          ARCH: ${{ matrix.arch }}
+          BITS: ${{ matrix.bits }}
+        run: |
+          # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
+          rm -f /usr/bin/link.exe
+          export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/$ARCH:$PATH"
+          export MAKEFLAGS="-j$NUMBER_OF_PROCESSORS"
+          srcdir=$PWD
           mkdir target
           cd target
-          ../configure --enable-64bit --enable-win32-target=WIN95 --prefix="$PWD/dist"
-          make -j"$NUMBER_OF_PROCESSORS"
-          make -C pr/tests -j"$NUMBER_OF_PROCESSORS"
+          # Word splitting of $BITS is intended.
+          # shellcheck disable=SC2086
+          "$srcdir/configure" $BITS --enable-win32-target=WIN95 --prefix="$PWD/dist"
+          make
+          make -C pr/tests
           cd pr/tests
-          ../../../pr/tests/runtests.sh ../../dist
-          EOF
+          "$srcdir/pr/tests/runtests.sh" ../../dist
 
-      - name: Build and test
-        shell: cmd # zizmor: ignore[misfeature] Needed to "call vcvars64.bat".
+  # MSVC has no gcov, so mingw is the only Windows toolchain here that can
+  # produce coverage.
+  windows-mingw:
+    name: windows-latest (mingw-gcc, coverage)
+    runs-on: windows-latest
+    env:
+      MSYSTEM: UCRT64
+      CHERE_INVOKING: 1
+    defaults:
+      run:
+        shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] A login shell is how MSYSTEM selects the ucrt64 toolchain.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install toolchain
         run: |
-          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set VSPATH=%%i
-          call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat"
-          set MOZILLABUILD=C:\mozilla-build\
-          C:\mozilla-build\msys2\msys2_shell.cmd -no-start -defterm -full-path -here -c "bash build.sh"
+          pacman -Sy --noconfirm
+          pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc make nsinstall
+
+      - name: Configure, build and test
+        env:
+          CFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
+          LDFLAGS: "--coverage"
+        run: |
+          srcdir=$PWD
+          mkdir target
+          cd target
+          "$srcdir/configure" --enable-64bit --enable-win32-target=WIN95 --prefix="$PWD/dist"
+          make -j"$(nproc)"
+          make -C pr/tests -j"$(nproc)" XCFLAGS=--coverage
+          cd pr/tests
+          "$srcdir/pr/tests/runtests.sh" ../../dist
+
+      - name: Put mingw gcov on PATH for Codecov
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: Add-Content $env:GITHUB_PATH 'C:\msys64\ucrt64\bin'
+
+      - if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-coverage
+        with:
+          flags: windows-mingw
+          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
