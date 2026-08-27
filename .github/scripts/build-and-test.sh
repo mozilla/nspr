@@ -3,10 +3,11 @@
 #
 # Extra configure arguments are taken as positional arguments. Callers may set
 # CC, CFLAGS, CXXFLAGS and LDFLAGS, and:
-#   MAKE             GNU make; the BSDs and Solaris ship theirs as gmake
-#   NSPR_COVERAGE    1 to instrument for gcov, msvc for MSVC's collector
-#   NSPR_32BIT       1 to build 32-bit, omitting --enable-64bit
-#   NSPR_SKIP_TESTS  1 to build without building or running the tests
+#   MAKE                 GNU make; the BSDs and Solaris ship theirs as gmake
+#   NSPR_COVERAGE        1 to instrument for gcov, msvc for MSVC's collector
+#   NSPR_32BIT           1 to build 32-bit, omitting --enable-64bit
+#   NSPR_SKIP_TESTS      1 to build without building or running the tests
+#   NSPR_SKIP_RUN_TESTS  1 to build the tests but not run them
 
 set -e
 
@@ -61,11 +62,12 @@ if [ "${NSPR_SKIP_TESTS:-}" != 1 ]; then
     # Word splitting of $test_make_args is intended.
     # shellcheck disable=SC2086
     "$MAKE" -C pr/tests ${test_make_args:-}
-    cd pr/tests
-    if [ "${NSPR_COVERAGE:-}" = msvc ]; then
-        tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
-        settings=$(cygpath -w "$topdir/target/coverage.runsettings")
-        cat >"$topdir/target/coverage.runsettings" <<'EOF'
+    if [ "${NSPR_SKIP_RUN_TESTS:-}" != 1 ]; then
+        cd pr/tests
+        if [ "${NSPR_COVERAGE:-}" = msvc ]; then
+            tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
+            settings=$(cygpath -w "$topdir/target/coverage.runsettings")
+            cat >"$topdir/target/coverage.runsettings" <<'EOF'
 <Configuration>
   <CodeCoverage>
     <ModulePaths>
@@ -78,15 +80,16 @@ if [ "${NSPR_SKIP_TESTS:-}" != 1 ]; then
   </CodeCoverage>
 </Configuration>
 EOF
-        for lib in nspr4 plc4 plds4; do
-            "$tool" instrument --settings "$settings" "$(cygpath -w "$topdir/target/dist/lib/$lib.dll")"
-        done
-        PATH="$topdir/target/dist/lib:$PATH" # The collector's children need it.
-        "$tool" collect --settings "$settings" \
-            --output "$(cygpath -w "$topdir/coverage.cobertura.xml")" \
-            --output-format cobertura \
-            "$(cygpath -w "$(command -v bash)")" "$topdir/pr/tests/runtests.sh" ../../dist
-    else
-        "$topdir/pr/tests/runtests.sh" ../../dist
+            for lib in nspr4 plc4 plds4; do
+                "$tool" instrument --settings "$settings" "$(cygpath -w "$topdir/target/dist/lib/$lib.dll")"
+            done
+            PATH="$topdir/target/dist/lib:$PATH" # The collector's children need it.
+            "$tool" collect --settings "$settings" \
+                --output "$(cygpath -w "$topdir/coverage.cobertura.xml")" \
+                --output-format cobertura \
+                "$(cygpath -w "$(command -v bash)")" "$topdir/pr/tests/runtests.sh" ../../dist
+        else
+            "$topdir/pr/tests/runtests.sh" ../../dist
+        fi
     fi
 fi
