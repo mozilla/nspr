@@ -169,7 +169,6 @@ jobs:
     runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     env:
       DLLFLAGS: -PROFILE
-      NSPR_NATIVE_THREADS_ONLY: ${{ matrix.win32_target == 'WINNT' && '1' || '0' }}
     strategy:
       fail-fast: false
       matrix:
@@ -181,10 +180,7 @@ jobs:
           - clang-cl
         win32_target:
           - WIN95
-          - WINNT
-        exclude:
-          - cc: clang-cl
-            win32_target: WINNT
+          # - WINNT # Unfixable
         include:
           - arch: arm64
             configure_target: aarch64-pc-mingw32

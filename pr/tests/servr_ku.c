@@ -112,7 +112,6 @@ WaitServerState(char* waiter, PRInt32 state)
 PRLock* workerThreadsLock;
 PRInt32 workerThreads;
 PRInt32 workerThreadsBusy;
-PRThread* workerThreadArray[64]; /* Interrupted at shutdown. */
 
 void
 WorkerThreadFunc(void* _listenSock)
@@ -142,7 +141,7 @@ WorkerThreadFunc(void* _listenSock)
         DPRINTF("\tServer worker thread running\n");
     }
 
-    while (!(ServerState & (SERVER_STATE_DYING | SERVER_STATE_DEAD))) {
+    while (1) {
         PRInt32 bytesToRead = _client_data;
         PRInt32 bytesToWrite = _server_data;
         PRFileDesc* newSock;
@@ -162,7 +161,7 @@ WorkerThreadFunc(void* _listenSock)
             if (debug_mode) {
                 printf("\tServer error in accept (%d)\n", bytesRead);
             }
-            break; /* Interrupted at shutdown. */
+            continue;
         }
 
         if (debug_mode) {
@@ -172,20 +171,18 @@ WorkerThreadFunc(void* _listenSock)
         PR_AtomicIncrement(&workerThreadsBusy);
         if (workerThreadsBusy == workerThreads) {
             PR_Lock(workerThreadsLock);
-            if (workerThreadsBusy == workerThreads &&
-                workerThreads < (PRInt32)PR_ARRAY_SIZE(workerThreadArray)) {
+            if (workerThreadsBusy == workerThreads) {
                 PRThread* WorkerThread;
 
                 WorkerThread = PR_CreateThread(
-                    PR_USER_THREAD, WorkerThreadFunc, listenSock, PR_PRIORITY_NORMAL,
-                    ServerScope, PR_JOINABLE_THREAD, THREAD_STACKSIZE);
+                    PR_SYSTEM_THREAD, WorkerThreadFunc, listenSock, PR_PRIORITY_NORMAL,
+                    ServerScope, PR_UNJOINABLE_THREAD, THREAD_STACKSIZE);
 
                 if (!WorkerThread) {
                     if (debug_mode) {
                         printf("Error creating client thread %d\n", workerThreads);
                     }
                 } else {
-                    workerThreadArray[workerThreads] = WorkerThread;
                     PR_AtomicIncrement(&workerThreads);
                     if (debug_mode) {
                         DPRINTF("\tServer creates worker (%d)\n", workerThreads);
@@ -225,8 +222,6 @@ WorkerThreadFunc(void* _listenSock)
         PR_Close(newSock);
         PR_AtomicDecrement(&workerThreadsBusy);
     }
-    PR_DELETE(dataBuf);
-    PR_DELETE(sendBuf);
 }
 
 PRFileDesc*
@@ -292,9 +287,9 @@ ServerSetup(void)
 
     workerThreadsLock = PR_NewLock();
 
-    WorkerThread = PR_CreateThread(PR_USER_THREAD, WorkerThreadFunc,
+    WorkerThread = PR_CreateThread(PR_SYSTEM_THREAD, WorkerThreadFunc,
                                    listenSocket, PR_PRIORITY_NORMAL, ServerScope,
-                                   PR_JOINABLE_THREAD, THREAD_STACKSIZE);
+                                   PR_UNJOINABLE_THREAD, THREAD_STACKSIZE);
 
     if (!WorkerThread) {
         if (debug_mode) {
@@ -303,7 +298,6 @@ ServerSetup(void)
         PR_Close(listenSocket);
         return NULL;
     }
-    workerThreadArray[workerThreads] = WorkerThread;
     PR_AtomicIncrement(&workerThreads);
     if (debug_mode) {
         DPRINTF("\tServer created primordial worker thread\n");
@@ -335,12 +329,6 @@ ServerThreadFunc(void* unused)
         WaitServerState(SERVER, SERVER_STATE_DYING);
 
         /* Cleanup */
-        for (PRInt32 i = 0; i < workerThreads; i++) {
-            PR_Interrupt(workerThreadArray[i]);
-        }
-        for (PRInt32 i = 0; i < workerThreads; i++) {
-            PR_JoinThread(workerThreadArray[i]);
-        }
         SetServerState(SERVER, SERVER_STATE_DEAD);
     }
 }
