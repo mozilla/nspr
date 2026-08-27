@@ -11,6 +11,9 @@ inputs:
   gcov:
     description: gcov executable, where the default one cannot read the data.
     default: gcov
+  file:
+    description: Coverage report file; empty looks for gcda files.
+    default: ""
 
 runs:
   using: composite
@@ -21,17 +24,22 @@ runs:
       id: check
       shell: bash
       env:
+        FILE: ${{ inputs.file }}
         FLAGS: ${{ inputs.flags }}
       run: |
-        if [ -n "$(find . -name '*.gcda' -print -quit)" ]; then
+        if { [ -n "$FILE" ] && [ -f "$FILE" ]; } ||
+          { [ -z "$FILE" ] && [ -n "$(find . -name '*.gcda' -print -quit)" ]; }; then
           echo "found=true" >>"$GITHUB_OUTPUT"
         else
           echo "::warning::No coverage data for $FLAGS; skipping upload"
         fi
 
-    - if: steps.check.outputs.found == 'true'
+    - name: Upload coverage
+      if: steps.check.outputs.found == 'true'
       uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
+        disable_search: ${{ inputs.file != '' }}
+        files: ${{ inputs.file }}
         gcov_executable: ${{ inputs.gcov }}
         flags: ${{ inputs.flags }}
         fail_ci_if_error: true

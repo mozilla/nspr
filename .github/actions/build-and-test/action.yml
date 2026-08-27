@@ -24,8 +24,8 @@ inputs:
     description: Whether to instrument the build for coverage.
     default: "false"
   tests:
-    description: Whether to build and run pr/tests.
-    default: "true"
+    description: Test mode; one of none, build, or run.
+    default: run
 
 runs:
   using: composite
@@ -39,15 +39,28 @@ runs:
         CXXFLAGS: ${{ inputs.cxxflags }}
         LDFLAGS: ${{ inputs.ldflags }}
         COVERAGE: ${{ inputs.coverage }}
+        TESTS: ${{ inputs.tests }}
       run: |
+        case "$TESTS" in
+          none | build | run) ;;
+          *)
+            echo "::error::tests must be one of: none, build, run"
+            exit 1
+            ;;
+        esac
         if [ "$COVERAGE" = true ]; then
           cov="-O0 -g --coverage -fprofile-update=atomic"
           CFLAGS="$cov${CFLAGS:+ $CFLAGS}"
           CXXFLAGS="$cov${CXXFLAGS:+ $CXXFLAGS}"
           LDFLAGS="--coverage${LDFLAGS:+ $LDFLAGS}"
         fi
+        jobs=${NUMBER_OF_PROCESSORS:-$(getconf _NPROCESSORS_ONLN)}
+        if [ "$RUNNER_OS" = Windows ]; then
+          rm -f /usr/bin/link.exe
+          cygpath -m "$PWD/target/dist/lib" >> "$GITHUB_PATH"
+        fi
         {
-          echo "MAKEFLAGS=-j$(getconf _NPROCESSORS_ONLN)"
+          echo "MAKEFLAGS=-j$jobs"
           echo "CC=$CC"
           echo "CFLAGS=$CFLAGS"
           echo "CXXFLAGS=$CXXFLAGS"
@@ -61,33 +74,41 @@ runs:
         ENABLE_64BIT: ${{ inputs.enable-64bit }}
         COVERAGE: ${{ inputs.coverage }}
       run: |
-        # Configure by absolute path, so VPATH and the source paths gcov records are absolute, too.
+        # Keep source paths absolute for gcov, except where Windows make requires a relative path.
         srcdir=$PWD
+        if [ "$RUNNER_OS" = Windows ]; then
+          srcdir=..
+        fi
+        configure_args=()
         if [ "$ENABLE_64BIT" = true ]; then
-          CONFIGURE_ARGS="--enable-64bit $CONFIGURE_ARGS"
+          configure_args+=(--enable-64bit)
         fi
         if [ "$COVERAGE" = true ]; then
-          CONFIGURE_ARGS="--enable-debug $CONFIGURE_ARGS"
+          configure_args+=(--enable-debug)
+        fi
+        if [ -n "$CONFIGURE_ARGS" ]; then
+          read -r -a extra_args <<< "$CONFIGURE_ARGS"
+          configure_args+=("${extra_args[@]}")
         fi
         mkdir target
         cd target
-        # Word splitting of $CONFIGURE_ARGS is intended.
-        # shellcheck disable=SC2086
-        "$srcdir/configure" $CONFIGURE_ARGS --prefix="$PWD/dist"
+        "$srcdir/configure" "${configure_args[@]}" --prefix="$PWD/dist"
         make
 
     - name: Build tests
-      if: inputs.tests == 'true'
+      if: inputs.tests != 'none'
       shell: bash
       env:
-        TEST_MAKE_ARGS: ${{ inputs.coverage == 'true' && 'XCFLAGS=--coverage' || '' }}
+        COVERAGE: ${{ inputs.coverage }}
       run: |
-        # Word splitting of $TEST_MAKE_ARGS is intended.
-        # shellcheck disable=SC2086
-        make -C target/pr/tests $TEST_MAKE_ARGS
+        make_args=()
+        if [ "$COVERAGE" = true ]; then
+          make_args+=(XCFLAGS=--coverage)
+        fi
+        make -C target/pr/tests "${make_args[@]}"
 
     - name: Run tests
-      if: inputs.tests == 'true'
+      if: inputs.tests == 'run'
       shell: bash
       working-directory: target/pr/tests
       run: ../../../pr/tests/runtests.sh ../../dist

@@ -289,7 +289,7 @@ $(LIBRARY): $(STATICLIB_OBJS)
 	$(AR) $(AR_FLAGS) $(STATICLIB_OBJS) $(AR_EXTRA_ARGS)
 	$(RANLIB) $@
 
-ifeq (,$(filter-out WIN95 WINCE WINMO,$(OS_TARGET)))
+ifeq (,$(filter-out WINNT WINCE,$(OS_ARCH)))
 # PDBs and import libraries need to depend on the shared library to
 # order dependencies properly.
 $(IMPORT_LIBRARY): $(SHARED_LIBRARY)

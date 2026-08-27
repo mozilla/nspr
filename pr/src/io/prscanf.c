@@ -623,12 +623,25 @@ PR_sscanf(const char* buf, const char* fmt, ...)
 {
     PRInt32 rv;
     ScanfState state;
+#if defined(_MSC_VER) && defined(_M_ARM64)
+    va_list ap;
+#endif
 
     state.get = &StringGetChar;
     state.unget = &StringUngetChar;
     state.stream = (void*)&buf;
+#if defined(_MSC_VER) && defined(_M_ARM64)
+    /* MSVC ARM64's va_start intrinsic does not initialize a va_list
+     * embedded in a struct correctly. */
+    va_start(ap, fmt);
+    va_copy(state.ap, ap);
+#else
     va_start(state.ap, fmt);
+#endif
     rv = DoScanf(&state, fmt);
     va_end(state.ap);
+#if defined(_MSC_VER) && defined(_M_ARM64)
+    va_end(ap);
+#endif
     return rv;
 }
