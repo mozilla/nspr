@@ -175,6 +175,29 @@ jobs:
           flags: ubuntu-latest-gcc-x86
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
+  vm:
+    name: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [freebsd, openbsd, netbsd, solaris]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/check-vm
+        with:
+          platform: ${{ matrix.platform }}
+
+      - if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-coverage
+        with:
+          plugins: noop # The VM already ran gcov, so noop stops Codecov running the host's.
+          flags: ${{ matrix.platform }}
+          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
+
   windows:
     name: windows-latest (${{ matrix.arch }})
     runs-on: windows-latest
@@ -183,9 +206,8 @@ jobs:
       matrix:
         include:
           - arch: x64
-            bits: --enable-64bit
           - arch: x86
-            bits: ""
+            m32: "1"
     env:
       MSYSTEM: MSYS
       CHERE_INVOKING: 1
@@ -212,22 +234,12 @@ jobs:
       - name: Configure, build and test
         env:
           ARCH: ${{ matrix.arch }}
-          BITS: ${{ matrix.bits }}
+          NSPR_32BIT: ${{ matrix.m32 }}
         run: |
           # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
           rm -f /usr/bin/link.exe
           export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/$ARCH:$PATH"
-          export MAKEFLAGS="-j$NUMBER_OF_PROCESSORS"
-          srcdir=$PWD
-          mkdir target
-          cd target
-          # Word splitting of $BITS is intended.
-          # shellcheck disable=SC2086
-          "$srcdir/configure" $BITS --enable-win32-target=WIN95 --prefix="$PWD/dist"
-          make
-          make -C pr/tests
-          cd pr/tests
-          "$srcdir/pr/tests/runtests.sh" ../../dist
+          .github/scripts/build-and-test.sh --enable-win32-target=WIN95
 
   # MSVC has no gcov, so mingw is the only Windows toolchain here that can
   # produce coverage.
@@ -252,17 +264,8 @@ jobs:
 
       - name: Configure, build and test
         env:
-          CFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
-          LDFLAGS: "--coverage"
-        run: |
-          srcdir=$PWD
-          mkdir target
-          cd target
-          "$srcdir/configure" --enable-64bit --enable-win32-target=WIN95 --prefix="$PWD/dist"
-          make -j"$(nproc)"
-          make -C pr/tests -j"$(nproc)" XCFLAGS=--coverage
-          cd pr/tests
-          "$srcdir/pr/tests/runtests.sh" ../../dist
+          NSPR_COVERAGE: 1
+        run: .github/scripts/build-and-test.sh --enable-win32-target=WIN95
 
       - name: Put mingw gcov on PATH for Codecov
         if: ${{ !cancelled() }}
