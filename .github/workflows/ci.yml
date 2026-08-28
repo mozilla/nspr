@@ -291,7 +291,20 @@ jobs:
           ls -d "$vs/Common7/IDE/CommonExtensions/Platform/InstrumentationEngine"/*/ || true
           ls -d "$vs/Team Tools/Dynamic Code Coverage Tools"/*/ || true
           coverage_tool="$vs/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
-          coverage_settings="$(cygpath -w "$PWD/target/coverage.config")"
+          cat > target/coverage-static.config <<'EOF'
+          <Configuration>
+            <CodeCoverage>
+              <ModulePaths>
+                <Include>
+                  <ModulePath>.*(?:nspr|plc|plds)4[.]dll$</ModulePath>
+                </Include>
+              </ModulePaths>
+              <EnableDynamicNativeInstrumentation>False</EnableDynamicNativeInstrumentation>
+              <EnableStaticNativeInstrumentation>True</EnableStaticNativeInstrumentation>
+            </CodeCoverage>
+          </Configuration>
+          EOF
+          coverage_settings="$(cygpath -w "$PWD/target/coverage-static.config")"
           coverage_log="$(cygpath -m "$PWD/coverage-probe.log")"
           export PATH="$PWD/target/dist/lib:$PATH"
           # Static instrumentation is the C++ path Microsoft documents.
