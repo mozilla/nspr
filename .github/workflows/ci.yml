@@ -242,6 +242,27 @@ jobs:
           enable-64bit: ${{ matrix.arch != 'x86' }}
           tests: build
 
+      # Static instrumentation is MSVC-only, so the clang-cl jobs need Clang's
+      # own source-based coverage instead. Check what that requires here before
+      # wiring it into the build: which LLVM tools the runner has, and whether
+      # clang-cl objects pull in the profile runtime by themselves, given that
+      # NSPR links with MSVC link rather than through the clang driver.
+      - name: Probe Clang coverage prerequisites
+        if: matrix.cc == 'clang-cl'
+        shell: bash
+        run: |
+          for tool in clang clang-cl llvm-profdata llvm-cov; do
+            printf '%s: %s\n' "$tool" "$(command -v "$tool" || echo MISSING)"
+          done
+          clang-cl --version || true
+          runtime_dir="$(clang --print-runtime-dir || true)"
+          printf 'runtime dir: %s\n' "$runtime_dir"
+          ls -d "$(cygpath -u "$runtime_dir")"/*profile* || true
+          llvm-profdata --version || true
+          printf 'int probe(void) { return 1; }\n' > probe.c
+          clang-cl -c -fprofile-instr-generate -fcoverage-mapping probe.c -Foprobe.obj
+          dumpbin -directives probe.obj | grep -i defaultlib || true
+
       - name: Verify build and run tests
         shell: bash
         env:
