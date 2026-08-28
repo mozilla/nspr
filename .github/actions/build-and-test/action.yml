@@ -49,7 +49,7 @@ runs:
         LDFLAGS: ${{ inputs.ldflags }}
         COVERAGE: ${{ inputs.coverage }}
         TESTS: ${{ inputs.tests }}
-      run: | # zizmor: ignore[github-env] Only PWD and the inputs above reach the environment files.
+      run: | # zizmor: ignore[github-env] Only PWD and inputs are written.
         case "$TESTS" in
           none | build | run) ;;
           *)
@@ -61,14 +61,8 @@ runs:
         case "${COVERAGE:=none}" in
           none) ;;
           gcov)
-            cov=--coverage
-            if [ "$RUNNER_OS" = Windows ]; then
-              libdirs="$(clang -print-resource-dir)/lib/windows"
-              ls "$libdirs" | grep profile || true
-            else
-              cov="-O0 -g $cov -fprofile-update=atomic"
-              ldcov=--coverage
-            fi
+            cov="-O0 -g --coverage -fprofile-update=atomic"
+            ldcov=--coverage
             ;;
           msvc)
             DLLFLAGS=-PROFILE
@@ -99,9 +93,6 @@ runs:
           echo "LDFLAGS=$LDFLAGS"
           echo "DLLFLAGS=$DLLFLAGS"
           echo "NSPR_COVERAGE=$COVERAGE"
-          if [ -n "$libdirs" ]; then
-            echo "LIB=$(cygpath -w "$libdirs");$LIB"
-          fi
         } >> "$GITHUB_ENV"
         echo "report=$report" >> "$GITHUB_OUTPUT"
 

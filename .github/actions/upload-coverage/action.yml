@@ -31,15 +31,9 @@ runs:
         llvm_cov=$(command -v llvm-cov ||
           command -v "llvm-cov-$(clang -dumpversion | cut -d. -f1)" || true)
         [ -n "$llvm_cov" ] || { echo "::error::no llvm-cov found"; exit 1; }
-        if [ "$RUNNER_OS" = Windows ]; then
-          shim="$RUNNER_TEMP/llvm-gcov.bat"
-          printf '@echo off\r\n"%s" gcov %%*\r\n' "$(cygpath -w "$llvm_cov")" >"$shim"
-          shim="$(cygpath -w "$shim")"
-        else
-          shim="$RUNNER_TEMP/llvm-gcov"
-          printf '#!/bin/sh\nexec %s gcov "$@"\n' "$llvm_cov" >"$shim"
-          chmod +x "$shim"
-        fi
+        shim="$RUNNER_TEMP/llvm-gcov"
+        printf '#!/bin/sh\nexec %s gcov "$@"\n' "$llvm_cov" >"$shim"
+        chmod +x "$shim"
         echo "shim=$shim" >>"$GITHUB_OUTPUT"
 
     # Callers upload even when a test failed, so a build that never produced
