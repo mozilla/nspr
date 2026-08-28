@@ -9,7 +9,7 @@ inputs:
     description: Codecov token.
     required: true
   gcov:
-    description: gcov executable, where the default one cannot read the data.
+    description: gcov executable, where the default one cannot read the data. Empty means gcov.
     default: gcov
   file:
     description: Coverage report file; empty looks for gcda files.
@@ -40,7 +40,7 @@ runs:
       with:
         disable_search: ${{ inputs.file != '' }}
         files: ${{ inputs.file }}
-        gcov_executable: ${{ inputs.gcov }}
+        gcov_executable: ${{ inputs.gcov || 'gcov' }}
         flags: ${{ inputs.flags }}
         fail_ci_if_error: true
         token: ${{ inputs.token }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.

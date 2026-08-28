@@ -15,33 +15,39 @@ concurrency:
 
 jobs:
   unix:
-    name: ${{ matrix.os }}${{ matrix.cc && format(' ({0})', matrix.cc) || '' }}${{ matrix.arch && format(' ({0})', matrix.arch) || '' }}
+    name: ${{ matrix.id }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - id: ubuntu-latest-gcc
+            os: ubuntu-latest
             cc: gcc
-            coverage: true
-          - os: ubuntu-latest
+            coverage: gcov
+          - id: ubuntu-latest-gcc-x86
+            os: ubuntu-latest
             cc: gcc
-            coverage: true
+            coverage: gcov
             arch: x86
             cflags: -m32
             ldflags: -m32
             enable_64bit: "false"
           # Left uninstrumented, so one entry still builds the default optimized config.
-          - os: ubuntu-latest
+          - id: ubuntu-latest-clang
+            os: ubuntu-latest
             cc: clang
-          - os: ubuntu-24.04-arm
+          - id: ubuntu-24.04-arm-clang
+            os: ubuntu-24.04-arm
             cc: clang
-            coverage: true
+            coverage: gcov
             gcov: llvm-gcov
-          - os: macos-latest
-            coverage: true
-          - os: macos-15-intel
-            coverage: true
+          - id: macos-latest
+            os: macos-latest
+            coverage: gcov
+          - id: macos-15-intel
+            os: macos-15-intel
+            coverage: gcov
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -63,20 +69,22 @@ jobs:
           chmod +x "$RUNNER_TEMP/llvm-gcov"
           echo "$RUNNER_TEMP" >>"$GITHUB_PATH"
 
-      - uses: ./.github/actions/build-and-test
+      - id: build
+        uses: ./.github/actions/build-and-test
         with:
           cc: ${{ matrix.cc }}
           cflags: ${{ matrix.cflags }}
           ldflags: ${{ matrix.ldflags }}
-          enable-64bit: ${{ matrix.enable_64bit || 'true' }}
+          enable-64bit: ${{ matrix.enable_64bit }}
           coverage: ${{ matrix.coverage }}
 
       - name: Upload coverage to Codecov
         if: ${{ !cancelled() && matrix.coverage }}
         uses: ./.github/actions/upload-coverage
         with:
-          flags: ${{ matrix.os }}${{ matrix.cc && format('-{0}', matrix.cc) || '' }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}
-          gcov: ${{ matrix.gcov || 'gcov' }}
+          file: ${{ steps.build.outputs.report }}
+          flags: ${{ matrix.id }}
+          gcov: ${{ matrix.gcov }}
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   warnings-as-errors:
@@ -165,10 +173,8 @@ jobs:
           exit $rval
 
   windows:
-    name: windows-${{ matrix.arch }} (${{ matrix.cc }}, ${{ matrix.win32_target }})
+    name: windows-${{ matrix.arch }}-${{ matrix.cc }}
     runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
-    env:
-      DLLFLAGS: -PROFILE
     strategy:
       fail-fast: false
       matrix:
@@ -178,17 +184,16 @@ jobs:
         cc:
           - cl
           - clang-cl
-        win32_target:
-          - WIN95
-          # - WINNT # Unfixable
         include:
+          - cc: cl
+            coverage: msvc
           - arch: arm64
             configure_target: aarch64-pc-mingw32
           - arch: x86
             cc: clang-cl
-            win32_target: WIN95
             configure_target: i686-pc-mingw32
             compiler_flags: --target=i686-pc-windows-msvc
+            enable_64bit: "false"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -232,38 +237,19 @@ jobs:
           printf 'PYTHONPATH=%s\n' "$(cygpath -m "$dependencies")" >> "$GITHUB_ENV"
           cygpath -m "$bin_dir" >> "$GITHUB_PATH"
 
-      - name: Build NSPR and tests
+      - id: build
+        name: Build NSPR and run tests
         uses: ./.github/actions/build-and-test
         with:
           cc: ${{ matrix.cc }}
           cflags: ${{ matrix.compiler_flags }}
-          cxxflags: ${{ matrix.compiler_flags }}
-          configure-args: ${{ matrix.configure_target && format('--target={0}', matrix.configure_target) || '' }} --enable-win32-target=${{ matrix.win32_target }}
-          enable-64bit: ${{ matrix.arch != 'x86' }}
-          tests: build
+          target: ${{ matrix.configure_target }}
+          configure-args: --enable-win32-target=WIN95
+          enable-64bit: ${{ matrix.enable_64bit }}
+          coverage: ${{ matrix.coverage }}
 
-      # Static instrumentation is MSVC-only, so the clang-cl jobs need Clang's
-      # own source-based coverage instead. Check what that requires here before
-      # wiring it into the build: which LLVM tools the runner has, and whether
-      # clang-cl objects pull in the profile runtime by themselves, given that
-      # NSPR links with MSVC link rather than through the clang driver.
-      - name: Probe Clang coverage prerequisites
-        if: matrix.cc == 'clang-cl'
-        shell: bash
-        run: |
-          for tool in clang clang-cl llvm-profdata llvm-cov; do
-            printf '%s: %s\n' "$tool" "$(command -v "$tool" || echo MISSING)"
-          done
-          clang-cl --version || true
-          runtime_dir="$(clang --print-runtime-dir || true)"
-          printf 'runtime dir: %s\n' "$runtime_dir"
-          ls -d "$(cygpath -u "$runtime_dir")"/*profile* || true
-          llvm-profdata --version || true
-          printf 'int probe(void) { return 1; }\n' > probe.c
-          clang-cl -c -fprofile-instr-generate -fcoverage-mapping probe.c -Foprobe.obj
-          dumpbin -directives probe.obj | grep -i defaultlib || true
-
-      - name: Verify build and run tests
+      - name: Verify the build targeted the requested toolchain
+        if: ${{ !cancelled() }}
         shell: bash
         env:
           TARGET_ARCH: ${{ matrix.arch }}
@@ -273,39 +259,11 @@ jobs:
             grep -Eq '^CPU_ARCH[[:space:]]*=[[:space:]]*aarch64$' target/config/autoconf.mk
           fi
           dumpbin -headers target/dist/lib/*nspr4.dll | grep -Fi "machine ($TARGET_ARCH)"
-          cat > target/coverage.config <<'EOF'
-          <Configuration>
-            <CodeCoverage>
-              <ModulePaths>
-                <Include>
-                  <ModulePath>.*(?:nspr|plc|plds)4[.]dll$</ModulePath>
-                </Include>
-              </ModulePaths>
-              <!-- Dynamic instrumentation collects nothing on the arm64 runner. -->
-              <EnableDynamicNativeInstrumentation>False</EnableDynamicNativeInstrumentation>
-              <EnableStaticNativeInstrumentation>True</EnableStaticNativeInstrumentation>
-            </CodeCoverage>
-          </Configuration>
-          EOF
-          coverage_tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
-          coverage_settings="$(cygpath -w "$PWD/target/coverage.config")"
-          coverage_output="$(cygpath -w "$PWD/windows-coverage.cobertura.xml")"
-          for lib in nspr4 plc4 plds4; do
-            "$coverage_tool" instrument \
-              --settings "$coverage_settings" \
-              "$(cygpath -w "$PWD/target/dist/lib/$lib.dll")"
-          done
-          cd target/pr/tests
-          "$coverage_tool" collect \
-            --settings "$coverage_settings" \
-            --output "$coverage_output" \
-            --output-format cobertura \
-            "$(cygpath -w "$(command -v bash)")" ../../../pr/tests/runtests.sh ../../dist
 
       - name: Upload coverage to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.coverage }}
         uses: ./.github/actions/upload-coverage
         with:
-          file: windows-coverage.cobertura.xml
-          flags: windows-${{ matrix.arch }}-${{ matrix.cc }}-${{ matrix.win32_target }}
+          file: ${{ steps.build.outputs.report }}
+          flags: windows-${{ matrix.arch }}-${{ matrix.cc }}
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.

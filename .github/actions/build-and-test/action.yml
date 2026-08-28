@@ -9,29 +9,38 @@ inputs:
     description: CFLAGS for the build.
     default: ""
   cxxflags:
-    description: CXXFLAGS for the build.
+    description: CXXFLAGS for the build; defaults to cflags.
     default: ""
   ldflags:
     description: LDFLAGS for the build.
+    default: ""
+  target:
+    description: Target triple to cross-compile for; empty builds for the host.
     default: ""
   configure-args:
     description: Extra configure arguments; --prefix is always passed.
     default: ""
   enable-64bit:
-    description: Whether to pass --enable-64bit.
+    description: Whether to pass --enable-64bit; empty means yes.
     default: "true"
   coverage:
-    description: Whether to instrument the build for coverage.
-    default: "false"
+    description: Coverage mode; one of none, gcov, or msvc. Empty means none.
+    default: none
   tests:
     description: Test mode; one of none, build, or run.
     default: run
+
+outputs:
+  report:
+    description: Coverage report the run produced, empty when Codecov should search for one itself.
+    value: ${{ steps.environment.outputs.report }}
 
 runs:
   using: composite
   steps:
     # Exported so the caller's own build steps, such as lib/tests, inherit them too.
     - name: Set build environment
+      id: environment
       shell: bash
       env:
         CC: ${{ inputs.cc }}
@@ -48,12 +57,26 @@ runs:
             exit 1
             ;;
         esac
-        if [ "$COVERAGE" = true ]; then
-          cov="-O0 -g --coverage -fprofile-update=atomic"
-          CFLAGS="$cov${CFLAGS:+ $CFLAGS}"
-          CXXFLAGS="$cov${CXXFLAGS:+ $CXXFLAGS}"
-          LDFLAGS="--coverage${LDFLAGS:+ $LDFLAGS}"
-        fi
+        CXXFLAGS=${CXXFLAGS:-$CFLAGS}
+        report=
+        case "${COVERAGE:=none}" in
+          none) ;;
+          gcov)
+            cov="-O0 -g --coverage -fprofile-update=atomic"
+            CFLAGS="$cov${CFLAGS:+ $CFLAGS}"
+            CXXFLAGS="$cov${CXXFLAGS:+ $CXXFLAGS}"
+            LDFLAGS="--coverage${LDFLAGS:+ $LDFLAGS}"
+            ;;
+          msvc)
+            # Instrumentation happens after the link, which only needs /PROFILE.
+            DLLFLAGS=-PROFILE
+            report=windows-coverage.cobertura.xml
+            ;;
+          *)
+            echo "::error::coverage must be one of: none, gcov, msvc"
+            exit 1
+            ;;
+        esac
         jobs=${NUMBER_OF_PROCESSORS:-$(getconf _NPROCESSORS_ONLN)}
         if [ "$RUNNER_OS" = Windows ]; then
           rm -f /usr/bin/link.exe
@@ -65,14 +88,17 @@ runs:
           echo "CFLAGS=$CFLAGS"
           echo "CXXFLAGS=$CXXFLAGS"
           echo "LDFLAGS=$LDFLAGS"
+          echo "DLLFLAGS=$DLLFLAGS"
+          echo "NSPR_COVERAGE=$COVERAGE"
         } >> "$GITHUB_ENV"
+        echo "report=$report" >> "$GITHUB_OUTPUT"
 
     - name: Configure and build
       shell: bash
       env:
         CONFIGURE_ARGS: ${{ inputs.configure-args }}
         ENABLE_64BIT: ${{ inputs.enable-64bit }}
-        COVERAGE: ${{ inputs.coverage }}
+        TARGET: ${{ inputs.target }}
       run: |
         # Keep source paths absolute for gcov, except where Windows make requires a relative path.
         srcdir=$PWD
@@ -80,10 +106,13 @@ runs:
           srcdir=..
         fi
         configure_args=()
-        if [ "$ENABLE_64BIT" = true ]; then
+        if [ "${ENABLE_64BIT:-true}" = true ]; then
           configure_args+=(--enable-64bit)
         fi
-        if [ "$COVERAGE" = true ]; then
+        if [ -n "$TARGET" ]; then
+          configure_args+=("--target=$TARGET")
+        fi
+        if [ "$NSPR_COVERAGE" = gcov ]; then
           configure_args+=(--enable-debug)
         fi
         if [ -n "$CONFIGURE_ARGS" ]; then
@@ -98,11 +127,10 @@ runs:
     - name: Build tests
       if: inputs.tests != 'none'
       shell: bash
-      env:
-        COVERAGE: ${{ inputs.coverage }}
       run: |
         make_args=()
-        if [ "$COVERAGE" = true ]; then
+        if [ "$NSPR_COVERAGE" = gcov ]; then
+          # pr/tests assigns XCFLAGS itself, so it only yields to the command line.
           make_args+=(XCFLAGS=--coverage)
         fi
         make -C target/pr/tests "${make_args[@]}"
@@ -111,4 +139,21 @@ runs:
       if: inputs.tests == 'run'
       shell: bash
       working-directory: target/pr/tests
-      run: ../../../pr/tests/runtests.sh ../../dist
+      env:
+        REPORT: ${{ steps.environment.outputs.report }}
+      run: |
+        collect=()
+        if [ "$NSPR_COVERAGE" = msvc ]; then
+          tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
+          settings="$(cygpath -w "$GITHUB_WORKSPACE/build/coverage/msvc.runsettings")"
+          for lib in nspr4 plc4 plds4; do
+            "$tool" instrument --settings "$settings" \
+              "$(cygpath -w "$GITHUB_WORKSPACE/target/dist/lib/$lib.dll")"
+          done
+          collect=("$tool" collect
+            --settings "$settings"
+            --output "$(cygpath -w "$GITHUB_WORKSPACE/$REPORT")"
+            --output-format cobertura
+            "$(cygpath -w "$(command -v bash)")")
+        fi
+        "${collect[@]}" ../../../pr/tests/runtests.sh ../../dist
