@@ -145,7 +145,21 @@ runs:
         collect=()
         if [ "$NSPR_COVERAGE" = msvc ]; then
           tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
-          settings="$(cygpath -w "$GITHUB_WORKSPACE/build/coverage/msvc.runsettings")"
+          # Static instrumentation is the only mode that works on arm64.
+          cat > "$RUNNER_TEMP/coverage.runsettings" <<'EOF'
+        <Configuration>
+          <CodeCoverage>
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*(?:nspr|plc|plds)4[.]dll$</ModulePath>
+              </Include>
+            </ModulePaths>
+            <EnableDynamicNativeInstrumentation>False</EnableDynamicNativeInstrumentation>
+            <EnableStaticNativeInstrumentation>True</EnableStaticNativeInstrumentation>
+          </CodeCoverage>
+        </Configuration>
+        EOF
+          settings="$(cygpath -w "$RUNNER_TEMP/coverage.runsettings")"
           for lib in nspr4 plc4 plds4; do
             "$tool" instrument --settings "$settings" \
               "$(cygpath -w "$GITHUB_WORKSPACE/target/dist/lib/$lib.dll")"
