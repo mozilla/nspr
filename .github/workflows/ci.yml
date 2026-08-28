@@ -185,8 +185,6 @@ jobs:
           - cl
           - clang-cl
         include:
-          - cc: cl
-            coverage: msvc
           - arch: arm64
             configure_target: aarch64-pc-mingw32
           - arch: x86
@@ -246,7 +244,7 @@ jobs:
           target: ${{ matrix.configure_target }}
           configure-args: --enable-win32-target=WIN95
           enable-64bit: ${{ matrix.enable_64bit }}
-          coverage: ${{ matrix.coverage }}
+          coverage: ${{ matrix.cc == 'cl' && 'msvc' || 'llvm' }}
 
       - name: Verify the build targeted the requested toolchain
         if: ${{ !cancelled() }}
@@ -261,7 +259,7 @@ jobs:
           dumpbin -headers target/dist/lib/*nspr4.dll | grep -Fi "machine ($TARGET_ARCH)"
 
       - name: Upload coverage to Codecov
-        if: ${{ !cancelled() && matrix.coverage }}
+        if: ${{ !cancelled() }}
         uses: ./.github/actions/upload-coverage
         with:
           file: ${{ steps.build.outputs.report }}

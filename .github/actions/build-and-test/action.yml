@@ -24,7 +24,7 @@ inputs:
     description: Whether to pass --enable-64bit; empty means yes.
     default: "true"
   coverage:
-    description: Coverage mode; one of none, gcov, or msvc. Empty means none.
+    description: Coverage mode; one of none, gcov, msvc, or llvm. Empty means none.
     default: none
   tests:
     description: Test mode; one of none, build, or run.
@@ -57,26 +57,37 @@ runs:
             exit 1
             ;;
         esac
+        read -r -a cc_flags <<< "$CFLAGS"
         CXXFLAGS=${CXXFLAGS:-$CFLAGS}
-        report=
         case "${COVERAGE:=none}" in
           none) ;;
           gcov)
             cov="-O0 -g --coverage -fprofile-update=atomic"
-            CFLAGS="$cov${CFLAGS:+ $CFLAGS}"
-            CXXFLAGS="$cov${CXXFLAGS:+ $CXXFLAGS}"
-            LDFLAGS="--coverage${LDFLAGS:+ $LDFLAGS}"
+            ldcov=--coverage
             ;;
           msvc)
-            # Instrumentation happens after the link, which only needs /PROFILE.
             DLLFLAGS=-PROFILE
             report=windows-coverage.cobertura.xml
             ;;
+          llvm)
+            cov="-fprofile-instr-generate -fcoverage-mapping"
+            libdirs="$(clang "${cc_flags[@]}" --print-runtime-dir)"
+            profraw="$PWD/profraw"
+            mkdir -p "$profraw"
+            report=windows-coverage.lcov
+            ;;
           *)
-            echo "::error::coverage must be one of: none, gcov, msvc"
+            echo "::error::coverage must be one of: none, gcov, msvc, llvm"
             exit 1
             ;;
         esac
+        if [ -n "$cov" ]; then
+          CFLAGS="$cov${CFLAGS:+ $CFLAGS}"
+          CXXFLAGS="$cov${CXXFLAGS:+ $CXXFLAGS}"
+        fi
+        if [ -n "$ldcov" ]; then
+          LDFLAGS="$ldcov${LDFLAGS:+ $LDFLAGS}"
+        fi
         jobs=${NUMBER_OF_PROCESSORS:-$(getconf _NPROCESSORS_ONLN)}
         if [ "$RUNNER_OS" = Windows ]; then
           rm -f /usr/bin/link.exe
@@ -90,6 +101,12 @@ runs:
           echo "LDFLAGS=$LDFLAGS"
           echo "DLLFLAGS=$DLLFLAGS"
           echo "NSPR_COVERAGE=$COVERAGE"
+          if [ -n "$libdirs" ]; then
+            echo "LIB=$libdirs;$LIB"
+          fi
+          if [ -n "$profraw" ]; then
+            echo "LLVM_PROFILE_FILE=$(cygpath -m "$profraw")/%p-%m.profraw"
+          fi
         } >> "$GITHUB_ENV"
         echo "report=$report" >> "$GITHUB_OUTPUT"
 
@@ -130,7 +147,6 @@ runs:
       run: |
         make_args=()
         if [ "$NSPR_COVERAGE" = gcov ]; then
-          # pr/tests assigns XCFLAGS itself, so it only yields to the command line.
           make_args+=(XCFLAGS=--coverage)
         fi
         make -C target/pr/tests "${make_args[@]}"
@@ -142,10 +158,12 @@ runs:
       env:
         REPORT: ${{ steps.environment.outputs.report }}
       run: |
+        libs=(nspr4 plc4 plds4)
+        libdir="$GITHUB_WORKSPACE/target/dist/lib"
+        out="$GITHUB_WORKSPACE/$REPORT"
         collect=()
         if [ "$NSPR_COVERAGE" = msvc ]; then
           tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
-          # Static instrumentation is the only mode that works on arm64.
           cat > "$RUNNER_TEMP/coverage.runsettings" <<'EOF'
         <Configuration>
           <CodeCoverage>
@@ -160,14 +178,25 @@ runs:
         </Configuration>
         EOF
           settings="$(cygpath -w "$RUNNER_TEMP/coverage.runsettings")"
-          for lib in nspr4 plc4 plds4; do
-            "$tool" instrument --settings "$settings" \
-              "$(cygpath -w "$GITHUB_WORKSPACE/target/dist/lib/$lib.dll")"
+          for lib in "${libs[@]}"; do
+            "$tool" instrument --settings "$settings" "$(cygpath -w "$libdir/$lib.dll")"
           done
           collect=("$tool" collect
             --settings "$settings"
-            --output "$(cygpath -w "$GITHUB_WORKSPACE/$REPORT")"
+            --output "$(cygpath -w "$out")"
             --output-format cobertura
             "$(cygpath -w "$(command -v bash)")")
         fi
         "${collect[@]}" ../../../pr/tests/runtests.sh ../../dist
+        if [ "$NSPR_COVERAGE" = llvm ]; then
+          bin="$(dirname "$(command -v clang)")"
+          objects=()
+          for lib in "${libs[@]}"; do
+            objects+=(-object "$libdir/$lib.dll")
+          done
+          profdata="$RUNNER_TEMP/coverage.profdata"
+          "$bin/llvm-profdata" merge -sparse -o "$profdata" \
+            "$GITHUB_WORKSPACE"/profraw/*.profraw
+          "$bin/llvm-cov" export -format=lcov -instr-profile="$profdata" \
+            "${objects[@]}" > "$out"
+        fi
