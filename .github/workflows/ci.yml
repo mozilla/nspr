@@ -268,12 +268,47 @@ jobs:
           coverage_tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
           coverage_settings="$(cygpath -w "$PWD/target/coverage.config")"
           coverage_output="$(cygpath -w "$PWD/windows-coverage.cobertura.xml")"
+          coverage_log="$(cygpath -m "$PWD/coverage-collect.log")"
           cd target/pr/tests
           "$coverage_tool" collect \
             --settings "$coverage_settings" \
             --output "$coverage_output" \
             --output-format cobertura \
+            --log-level Verbose \
+            --log-file "$coverage_log" \
             "$(cygpath -w "$(command -v bash)")" ../../../pr/tests/runtests.sh ../../dist
+
+      # The arm64 jobs collect nothing ("Profiler was not initialized"), so
+      # Codecov rejects their report as REPORT_EMPTY. The instrumented DLLs are
+      # arm64 but the root process, Git for Windows bash, is x64 under
+      # emulation; check whether a native root process fares any better.
+      - name: Probe coverage collection with a native root process
+        if: ${{ !cancelled() && matrix.arch == 'arm64' }}
+        shell: bash
+        run: |
+          coverage_tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
+          coverage_settings="$(cygpath -w "$PWD/target/coverage.config")"
+          coverage_log="$(cygpath -m "$PWD/coverage-probe.log")"
+          export PATH="$PWD/target/dist/lib:$PATH"
+          cd target/pr/tests
+          "$coverage_tool" collect \
+            --settings "$coverage_settings" \
+            --output "$(cygpath -w "$PWD/probe.cobertura.xml")" \
+            --output-format cobertura \
+            --log-level Verbose \
+            --log-file "$coverage_log" \
+            ./system.exe
+          printf 'instrumented lines in probe report: %s\n' "$(grep -c '<line ' probe.cobertura.xml || true)"
+
+      - name: Show coverage collector logs
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          for log in coverage-collect.log coverage-probe.log; do
+            [ -f "$log" ] || continue
+            printf '=== %s (%s bytes) ===\n' "$log" "$(wc -c <"$log")"
+            grep -iE 'instrument|profiler|not found|arm64|unsupported|fail' "$log" | sort -u | head -50 || true
+          done
 
       - name: Upload coverage to Codecov
         if: ${{ !cancelled() }}
