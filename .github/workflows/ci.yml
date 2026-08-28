@@ -279,17 +279,27 @@ jobs:
             "$(cygpath -w "$(command -v bash)")" ../../../pr/tests/runtests.sh ../../dist
 
       # The arm64 jobs collect nothing ("Profiler was not initialized"), so
-      # Codecov rejects their report as REPORT_EMPTY. The instrumented DLLs are
-      # arm64 but the root process, Git for Windows bash, is x64 under
-      # emulation; check whether a native root process fares any better.
-      - name: Probe coverage collection with a native root process
+      # Codecov rejects their report as REPORT_EMPTY. A native root process does
+      # not help, and unlike windows-latest the arm64 image only has VS 2022,
+      # whose collector never logs OnInstrumentation. Check what the instrumen-
+      # tation engine ships for arm64, and whether static instrumentation works.
+      - name: Probe coverage collection
         if: ${{ !cancelled() && matrix.arch == 'arm64' }}
         shell: bash
         run: |
-          coverage_tool="$(cygpath -u "$VSINSTALLDIR")/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
+          vs="$(cygpath -u "$VSINSTALLDIR")"
+          ls -d "$vs/Common7/IDE/CommonExtensions/Platform/InstrumentationEngine"/*/ || true
+          ls -d "$vs/Team Tools/Dynamic Code Coverage Tools"/*/ || true
+          coverage_tool="$vs/Common7/IDE/Extensions/Microsoft/CodeCoverage.Console/Microsoft.CodeCoverage.Console.exe"
           coverage_settings="$(cygpath -w "$PWD/target/coverage.config")"
           coverage_log="$(cygpath -m "$PWD/coverage-probe.log")"
           export PATH="$PWD/target/dist/lib:$PATH"
+          # Static instrumentation is the C++ path Microsoft documents.
+          "$coverage_tool" instrument \
+            --settings "$coverage_settings" \
+            --log-level Verbose \
+            --log-file "$(cygpath -m "$PWD/coverage-instrument.log")" \
+            "$(cygpath -w "$PWD/target/dist/lib/nspr4.dll")" || true
           cd target/pr/tests
           "$coverage_tool" collect \
             --settings "$coverage_settings" \
@@ -304,10 +314,15 @@ jobs:
         if: ${{ !cancelled() }}
         shell: bash
         run: |
-          for log in coverage-collect.log coverage-probe.log; do
+          for log in coverage-collect.log coverage-instrument.log coverage-probe.log; do
             [ -f "$log" ] || continue
-            printf '=== %s (%s bytes) ===\n' "$log" "$(wc -c <"$log")"
-            grep -iE 'instrument|profiler|not found|arm64|unsupported|fail' "$log" | sort -u | head -50 || true
+            size="$(wc -c <"$log")"
+            printf '=== %s (%s bytes) ===\n' "$log" "$size"
+            if [ "$size" -le 65536 ]; then
+              cat "$log"
+            else
+              grep -iE 'instrument|profiler|not found|arm64|unsupported|fail' "$log" | sort -u | head -50 || true
+            fi
           done
 
       - name: Upload coverage to Codecov
