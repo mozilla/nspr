@@ -24,7 +24,7 @@ inputs:
     description: Whether to pass --enable-64bit; empty means yes.
     default: "true"
   coverage:
-    description: Coverage mode; one of none, gcov, msvc, or llvm. Empty means none.
+    description: Coverage mode; one of none, gcov, or msvc. Empty means none.
     default: none
   tests:
     description: Test mode; one of none, build, or run.
@@ -49,7 +49,7 @@ runs:
         LDFLAGS: ${{ inputs.ldflags }}
         COVERAGE: ${{ inputs.coverage }}
         TESTS: ${{ inputs.tests }}
-      run: |
+      run: | # zizmor: ignore[github-env] Only PWD and the inputs above reach the environment files.
         case "$TESTS" in
           none | build | run) ;;
           *)
@@ -57,27 +57,25 @@ runs:
             exit 1
             ;;
         esac
-        read -r -a cc_flags <<< "$CFLAGS"
         CXXFLAGS=${CXXFLAGS:-$CFLAGS}
         case "${COVERAGE:=none}" in
           none) ;;
           gcov)
-            cov="-O0 -g --coverage -fprofile-update=atomic"
-            ldcov=--coverage
+            cov=--coverage
+            if [ "$RUNNER_OS" = Windows ]; then
+              libdirs="$(clang -print-resource-dir)/lib/windows"
+              ls "$libdirs" | grep profile || true
+            else
+              cov="-O0 -g $cov -fprofile-update=atomic"
+              ldcov=--coverage
+            fi
             ;;
           msvc)
             DLLFLAGS=-PROFILE
             report=windows-coverage.cobertura.xml
             ;;
-          llvm)
-            cov="-fprofile-instr-generate -fcoverage-mapping"
-            libdirs="$(clang "${cc_flags[@]}" --print-runtime-dir)"
-            profraw="$PWD/profraw"
-            mkdir -p "$profraw"
-            report=windows-coverage.lcov
-            ;;
           *)
-            echo "::error::coverage must be one of: none, gcov, msvc, llvm"
+            echo "::error::coverage must be one of: none, gcov, msvc"
             exit 1
             ;;
         esac
@@ -102,10 +100,7 @@ runs:
           echo "DLLFLAGS=$DLLFLAGS"
           echo "NSPR_COVERAGE=$COVERAGE"
           if [ -n "$libdirs" ]; then
-            echo "LIB=$libdirs;$LIB"
-          fi
-          if [ -n "$profraw" ]; then
-            echo "LLVM_PROFILE_FILE=$(cygpath -m "$profraw")/%p-%m.profraw"
+            echo "LIB=$(cygpath -w "$libdirs");$LIB"
           fi
         } >> "$GITHUB_ENV"
         echo "report=$report" >> "$GITHUB_OUTPUT"
@@ -188,15 +183,3 @@ runs:
             "$(cygpath -w "$(command -v bash)")")
         fi
         "${collect[@]}" ../../../pr/tests/runtests.sh ../../dist
-        if [ "$NSPR_COVERAGE" = llvm ]; then
-          bin="$(dirname "$(command -v clang)")"
-          objects=()
-          for lib in "${libs[@]}"; do
-            objects+=(-object "$libdir/$lib.dll")
-          done
-          profdata="$RUNNER_TEMP/coverage.profdata"
-          "$bin/llvm-profdata" merge -sparse -o "$profdata" \
-            "$GITHUB_WORKSPACE"/profraw/*.profraw
-          "$bin/llvm-cov" export -format=lcov -instr-profile="$profdata" \
-            "${objects[@]}" > "$out"
-        fi

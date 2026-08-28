@@ -41,7 +41,7 @@ jobs:
             os: ubuntu-24.04-arm
             cc: clang
             coverage: gcov
-            gcov: llvm-gcov
+            gcov: llvm-cov
           - id: macos-latest
             os: macos-latest
             coverage: gcov
@@ -56,18 +56,6 @@ jobs:
       - name: Install 32-bit toolchain
         if: matrix.arch == 'x86'
         run: sudo apt-get update && sudo apt-get install -y gcc-multilib
-
-      # macOS ships LLVM's gcov as gcov, but for clang on Linux the subcommand
-      # has to be wrapped: Codecov takes a single gcov executable.
-      - name: Install llvm-cov shim
-        if: matrix.gcov
-        run: |
-          sudo apt-get update && sudo apt-get install -y llvm
-          llvm_cov=$(command -v llvm-cov || command -v "llvm-cov-$(clang -dumpversion | cut -d. -f1)" || true)
-          [ -n "$llvm_cov" ] || { echo "::error::no llvm-cov found"; exit 1; }
-          printf '#!/bin/sh\nexec %s gcov "$@"\n' "$llvm_cov" >"$RUNNER_TEMP/llvm-gcov"
-          chmod +x "$RUNNER_TEMP/llvm-gcov"
-          echo "$RUNNER_TEMP" >>"$GITHUB_PATH"
 
       - id: build
         uses: ./.github/actions/build-and-test
@@ -244,7 +232,7 @@ jobs:
           target: ${{ matrix.configure_target }}
           configure-args: --enable-win32-target=WIN95
           enable-64bit: ${{ matrix.enable_64bit }}
-          coverage: ${{ matrix.cc == 'cl' && 'msvc' || 'llvm' }}
+          coverage: ${{ matrix.cc == 'cl' && 'msvc' || 'gcov' }}
 
       - name: Verify the build targeted the requested toolchain
         if: ${{ !cancelled() }}
@@ -264,4 +252,5 @@ jobs:
         with:
           file: ${{ steps.build.outputs.report }}
           flags: windows-${{ matrix.arch }}-${{ matrix.cc }}
+          gcov: ${{ matrix.cc == 'clang-cl' && 'llvm-cov' || 'gcov' }}
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.

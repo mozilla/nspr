@@ -9,7 +9,7 @@ inputs:
     description: Codecov token.
     required: true
   gcov:
-    description: gcov executable, where the default one cannot read the data. Empty means gcov.
+    description: Reader for gcov data; one of gcov or llvm-cov. Empty means gcov.
     default: gcov
   file:
     description: Coverage report file; empty looks for gcda files.
@@ -18,6 +18,30 @@ inputs:
 runs:
   using: composite
   steps:
+    # Codecov takes a single gcov executable, but LLVM's is a subcommand, so it
+    # needs wrapping. macOS ships LLVM's gcov as gcov and needs neither.
+    - name: Set up gcov reader
+      id: reader
+      if: inputs.gcov == 'llvm-cov'
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = Linux ]; then
+          sudo apt-get update && sudo apt-get install -y llvm
+        fi
+        llvm_cov=$(command -v llvm-cov ||
+          command -v "llvm-cov-$(clang -dumpversion | cut -d. -f1)" || true)
+        [ -n "$llvm_cov" ] || { echo "::error::no llvm-cov found"; exit 1; }
+        if [ "$RUNNER_OS" = Windows ]; then
+          shim="$RUNNER_TEMP/llvm-gcov.bat"
+          printf '@echo off\r\n"%s" gcov %%*\r\n' "$(cygpath -w "$llvm_cov")" >"$shim"
+          shim="$(cygpath -w "$shim")"
+        else
+          shim="$RUNNER_TEMP/llvm-gcov"
+          printf '#!/bin/sh\nexec %s gcov "$@"\n' "$llvm_cov" >"$shim"
+          chmod +x "$shim"
+        fi
+        echo "shim=$shim" >>"$GITHUB_OUTPUT"
+
     # Callers upload even when a test failed, so a build that never produced
     # data would otherwise trip fail_ci_if_error with a confusing error.
     - name: Look for coverage data
@@ -40,7 +64,7 @@ runs:
       with:
         disable_search: ${{ inputs.file != '' }}
         files: ${{ inputs.file }}
-        gcov_executable: ${{ inputs.gcov || 'gcov' }}
+        gcov_executable: ${{ steps.reader.outputs.shim || 'gcov' }}
         flags: ${{ inputs.flags }}
         fail_ci_if_error: true
         token: ${{ inputs.token }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.

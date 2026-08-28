@@ -3,6 +3,13 @@ ignore:
   - "pr/tests"
   - "lib/tests"
 
+fixes:
+  - "C:/a/nspr/nspr/::"
+  - "D:/a/nspr/nspr/::"
+  - "**/pr/::pr/"
+  - "**/lib/::lib/"
+  - "**/config/::config/"
+
 # Coverage is uploaded per platform, so one failed job must not look like a drop.
 flag_management:
   default_rules:
