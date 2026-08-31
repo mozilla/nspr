@@ -1,0 +1,6 @@
+# actionlint 1.7.12 predates GitHub's $/ self-repository syntax.
+# TODO: Remove when https://github.com/rhysd/actionlint/issues/711 ships.
+paths:
+  .github/workflows/*.yml:
+    ignore:
+      - "in invalid format because ref is missing"

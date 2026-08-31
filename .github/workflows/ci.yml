@@ -15,54 +15,64 @@ concurrency:
 
 jobs:
   unix:
-    name: ${{ matrix.os }}${{ matrix.cc && format(' ({0})', matrix.cc) || '' }}
+    name: ${{ matrix.id }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - id: ubuntu-latest-gcc
+            os: ubuntu-latest
             cc: gcc
-            coverage: true
+            coverage: gcov
+          - id: ubuntu-latest-gcc-x86
+            os: ubuntu-latest
+            cc: gcc
+            coverage: gcov
+            arch: x86
+            cflags: -m32
+            ldflags: -m32
+            enable_64bit: "false"
           # Left uninstrumented, so one entry still builds the default optimized config.
-          - os: ubuntu-latest
+          - id: ubuntu-latest-clang
+            os: ubuntu-latest
             cc: clang
-          - os: ubuntu-24.04-arm
+          - id: ubuntu-24.04-arm-clang
+            os: ubuntu-24.04-arm
             cc: clang
-            coverage: true
-            gcov: llvm-gcov
-          - os: macos-latest
-            coverage: true
-          - os: macos-15-intel
-            coverage: true
+            coverage: gcov
+            gcov: llvm-cov
+          - id: macos-latest
+            os: macos-latest
+            coverage: gcov
+          - id: macos-15-intel
+            os: macos-15-intel
+            coverage: gcov
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # macOS ships LLVM's gcov as gcov, but for clang on Linux the subcommand
-      # has to be wrapped: Codecov takes a single gcov executable.
-      - name: Install llvm-cov shim
-        if: matrix.gcov
-        run: |
-          sudo apt-get update && sudo apt-get install -y llvm
-          llvm_cov=$(command -v llvm-cov || command -v "llvm-cov-$(clang -dumpversion | cut -d. -f1)" || true)
-          [ -n "$llvm_cov" ] || { echo "::error::no llvm-cov found"; exit 1; }
-          printf '#!/bin/sh\nexec %s gcov "$@"\n' "$llvm_cov" >"$RUNNER_TEMP/llvm-gcov"
-          chmod +x "$RUNNER_TEMP/llvm-gcov"
-          echo "$RUNNER_TEMP" >>"$GITHUB_PATH"
+      - name: Install 32-bit toolchain
+        if: matrix.arch == 'x86'
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
 
-      - uses: ./.github/actions/build-and-test
+      - id: build
+        uses: $/.github/actions/build-and-test
         with:
           cc: ${{ matrix.cc }}
+          cflags: ${{ matrix.cflags }}
+          ldflags: ${{ matrix.ldflags }}
+          enable-64bit: ${{ matrix.enable_64bit }}
           coverage: ${{ matrix.coverage }}
 
-      # Upload even when a test failed; the tests that ran still wrote data.
-      - if: ${{ !cancelled() && matrix.coverage }}
-        uses: ./.github/actions/upload-coverage
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() && matrix.coverage }}
+        uses: $/.github/actions/upload-coverage
         with:
-          gcov: ${{ matrix.gcov || 'gcov' }}
-          flags: ${{ matrix.os }}${{ matrix.cc && format('-{0}', matrix.cc) || '' }}
+          file: ${{ steps.build.outputs.report }}
+          flags: ${{ matrix.id }}
+          gcov: ${{ matrix.gcov }}
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   warnings-as-errors:
@@ -74,11 +84,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/build-and-test
+      - uses: $/.github/actions/build-and-test
         with:
           cc: clang
           cflags: "-Wall -Werror -Qunused-arguments"
-          tests: "false"
+          tests: none
 
   clang-format:
     name: clang-format
@@ -125,7 +135,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/build-and-test
+      - uses: $/.github/actions/build-and-test
         with:
           cc: clang
           cflags: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
@@ -150,49 +160,26 @@ jobs:
           done
           exit $rval
 
-  linux-x86:
-    name: ubuntu-latest (gcc, 32-bit)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install 32-bit toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
-
-      - uses: ./.github/actions/build-and-test
-        with:
-          cc: gcc
-          cflags: -m32
-          ldflags: -m32
-          enable-64bit: "false"
-          coverage: "true"
-
-      - if: ${{ !cancelled() }}
-        uses: ./.github/actions/upload-coverage
-        with:
-          flags: ubuntu-latest-gcc-x86
-          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
-
   windows:
-    name: windows-latest (${{ matrix.arch }})
-    runs-on: windows-latest
+    name: windows-${{ matrix.arch }}-${{ matrix.cc }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
+        arch:
+          - x64
+          - arm64
+        cc:
+          - cl
+          - clang-cl
         include:
-          - arch: x64
-            bits: --enable-64bit
+          - arch: arm64
+            configure_target: aarch64-pc-mingw32
           - arch: x86
-            bits: ""
-    env:
-      MSYSTEM: MSYS
-      CHERE_INVOKING: 1
-      MSYS2_PATH_TYPE: inherit
-    defaults:
-      run:
-        shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] configure needs a POSIX shell.
+            cc: clang-cl
+            configure_target: i686-pc-mingw32
+            compiler_flags: --target=i686-pc-windows-msvc
+            enable_64bit: "false"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -204,73 +191,67 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - name: Install build tools
+      - name: Set up nsinstall
+        shell: bash
         run: |
-          pacman -Sy --noconfirm
-          pacman -S --needed --noconfirm make nsinstall
+          temp_dir="$(cygpath -u "$RUNNER_TEMP")"
+          nsinstall="$temp_dir/nsinstall.py"
+          url='https://raw.githubusercontent.com/mozilla-firefox/firefox/6d751cf5d0af4b7fcc1b232b6c2ba0551afabe1d/config/nsinstall.py'
+          curl --fail --location --silent --show-error "$url" --output "$nsinstall"
+          expected='f88df5591ee50d6e86625efd6e5f9c7b0dd4cba61e27ab533b1990115e100caf'
+          actual="$(sha256sum "$nsinstall")"
+          actual="${actual%% *}"
+          [[ "$actual" == "$expected" ]] || {
+            printf 'nsinstall.py hash mismatch: expected %s, got %s\n' "$expected" "$actual" >&2
+            exit 1
+          }
+          requirements="$temp_dir/nsinstall-requirements.txt"
+          cat > "$requirements" <<'EOF'
+          mozfile==3.0.0 --hash=sha256:3b0afcda2fa8b802ef657df80a56f21619008f61fcc14b756124028d7b7adf5c
+          six==1.17.0 --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274
+          EOF
+          dependencies="$temp_dir/nsinstall-dependencies"
+          python -m pip install --disable-pip-version-check --no-deps --only-binary=:all: --require-hashes --requirement "$requirements" --target "$dependencies"
+          bin_dir="$temp_dir/nsinstall-bin"
+          mkdir "$bin_dir"
+          cat > "$bin_dir/nsinstall" <<'EOF'
+          #!/bin/sh
+          exec python "$NSINSTALL_PY" "$@"
+          EOF
+          chmod +x "$bin_dir/nsinstall"
+          printf 'NSINSTALL_PY=%s\n' "$(cygpath -m "$nsinstall")" >> "$GITHUB_ENV"
+          printf 'PYTHONPATH=%s\n' "$(cygpath -m "$dependencies")" >> "$GITHUB_ENV"
+          cygpath -m "$bin_dir" >> "$GITHUB_PATH"
 
-      - name: Configure, build and test
-        env:
-          ARCH: ${{ matrix.arch }}
-          BITS: ${{ matrix.bits }}
-        run: |
-          # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
-          rm -f /usr/bin/link.exe
-          export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/$ARCH:$PATH"
-          export MAKEFLAGS="-j$NUMBER_OF_PROCESSORS"
-          srcdir=$PWD
-          mkdir target
-          cd target
-          # Word splitting of $BITS is intended.
-          # shellcheck disable=SC2086
-          "$srcdir/configure" $BITS --enable-win32-target=WIN95 --prefix="$PWD/dist"
-          make
-          make -C pr/tests
-          cd pr/tests
-          "$srcdir/pr/tests/runtests.sh" ../../dist
-
-  # MSVC has no gcov, so mingw is the only Windows toolchain here that can
-  # produce coverage.
-  windows-mingw:
-    name: windows-latest (mingw-gcc, coverage)
-    runs-on: windows-latest
-    env:
-      MSYSTEM: UCRT64
-      CHERE_INVOKING: 1
-    defaults:
-      run:
-        shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] A login shell is how MSYSTEM selects the ucrt64 toolchain.
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: build
+        name: Build NSPR and run tests
+        uses: $/.github/actions/build-and-test
         with:
-          persist-credentials: false
+          cc: ${{ matrix.cc }}
+          cflags: ${{ matrix.compiler_flags }}
+          target: ${{ matrix.configure_target }}
+          configure-args: --enable-win32-target=WIN95
+          enable-64bit: ${{ matrix.enable_64bit }}
+          # clang-cl is left uninstrumented: --coverage emits no /DEFAULTLIB
+          # directive for the gcov runtime, and the runners carry no i386 one.
+          coverage: ${{ matrix.cc == 'cl' && 'msvc' || 'none' }}
 
-      - name: Install toolchain
-        run: |
-          pacman -Sy --noconfirm
-          pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc make nsinstall
-
-      - name: Configure, build and test
-        env:
-          CFLAGS: "-O0 -g --coverage -fprofile-update=atomic"
-          LDFLAGS: "--coverage"
-        run: |
-          srcdir=$PWD
-          mkdir target
-          cd target
-          "$srcdir/configure" --enable-64bit --enable-win32-target=WIN95 --prefix="$PWD/dist"
-          make -j"$(nproc)"
-          make -C pr/tests -j"$(nproc)" XCFLAGS=--coverage
-          cd pr/tests
-          "$srcdir/pr/tests/runtests.sh" ../../dist
-
-      - name: Put mingw gcov on PATH for Codecov
+      - name: Verify the build targeted the requested toolchain
         if: ${{ !cancelled() }}
-        shell: pwsh
-        run: Add-Content $env:GITHUB_PATH 'C:\msys64\ucrt64\bin'
+        shell: bash
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: |
+          grep -Eq "^CC[[:space:]]*=[[:space:]]*$CC([.]exe)?([[:space:]]|$)" target/config/autoconf.mk
+          if [[ "$TARGET_ARCH" == arm64 ]]; then
+            grep -Eq '^CPU_ARCH[[:space:]]*=[[:space:]]*aarch64$' target/config/autoconf.mk
+          fi
+          dumpbin -headers target/dist/lib/*nspr4.dll | grep -Fi "machine ($TARGET_ARCH)"
 
-      - if: ${{ !cancelled() }}
-        uses: ./.github/actions/upload-coverage
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() && matrix.cc == 'cl' }}
+        uses: $/.github/actions/upload-coverage
         with:
-          flags: windows-mingw
+          file: ${{ steps.build.outputs.report }}
+          flags: windows-${{ matrix.arch }}-${{ matrix.cc }}
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
