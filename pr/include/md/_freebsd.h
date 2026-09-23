@@ -36,6 +36,8 @@
 #define _PR_SI_ARCHITECTURE "mips64"
 #elif defined(__mips__)
 #define _PR_SI_ARCHITECTURE "mips"
+#elif defined(__riscv) && (__riscv_xlen == 64)
+#define _PR_SI_ARCHITECTURE "riscv64"
 #else
 #error "Unknown CPU architecture"
 #endif
