@@ -651,7 +651,7 @@ CondVarMixedTest(void* _arg)
         /* Notify the threads */
         for (index = 0; index < (arg * 4); index += 3) {
             PR_Lock(list[index].lock);
-            *list[index].tcount++;
+            (*list[index].tcount)++;
             PR_NotifyCondVar(list[index].cvar);
             PR_Unlock(list[index].lock);
         }
