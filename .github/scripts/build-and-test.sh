@@ -34,9 +34,20 @@ fi
 
 [ "${NSPR_32BIT:-}" = 1 ] || set -- --enable-64bit "$@"
 
-# Configure by absolute path, so VPATH and gcov source paths are absolute.
+# Configure by absolute path where possible, so VPATH and gcov source paths are absolute.
 unset CDPATH
-srcdir=$(cd -- "$(dirname -- "$0")/../.." && pwd)
+topdir=$(cd -- "$(dirname -- "$0")/../.." && pwd)
+srcdir=$topdir
+# Native Windows make splits VPATH at the drive letter's colon.
+case $("$MAKE" --version 2>/dev/null) in
+*Windows32* | *mingw32*)
+    if [ "$topdir" != "$PWD" ]; then
+        echo "Run $0 from $topdir with this make" >&2
+        exit 1
+    fi
+    srcdir=..
+    ;;
+esac
 
 mkdir target
 cd target
@@ -48,5 +59,5 @@ if [ "${NSPR_SKIP_TESTS:-}" != 1 ]; then
     # shellcheck disable=SC2086
     "$MAKE" -C pr/tests ${test_make_args:-}
     cd pr/tests
-    "$srcdir/pr/tests/runtests.sh" ../../dist
+    "$topdir/pr/tests/runtests.sh" ../../dist
 fi

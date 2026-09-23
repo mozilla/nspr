@@ -199,12 +199,17 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   windows:
-    name: windows-latest (${{ matrix.arch }})
+    name: windows-latest (${{ matrix.arch }}, ${{ matrix.cc }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [x64, x86]
+        cc: [cl, clang-cl]
+        include:
+          - arch: x86
+            cc: clang-cl
+            cflags: --target=i686-pc-windows-msvc
     env:
       MSYSTEM: MSYS
       CHERE_INVOKING: 1
@@ -233,12 +238,49 @@ jobs:
       - name: Configure, build and test
         env:
           ARCH: ${{ matrix.arch }}
+          CC: ${{ matrix.cc }}
+          CFLAGS: ${{ matrix.cflags }}
           NSPR_32BIT: ${{ matrix.arch == 'x86' && '1' || '' }}
         run: |
           # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
           rm -f /usr/bin/link.exe
           export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/$ARCH:$PATH"
           .github/scripts/build-and-test.sh --enable-win32-target=WIN95
+
+  windows-arm64:
+    name: windows-11-arm (${{ matrix.cc }})
+    runs-on: windows-11-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [cl, clang-cl]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # TODO: Would like to pin this, but the Mozilla org allowlist requires "ilammy/msvc-dev-cmd@v1*".
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1 # zizmor: ignore[unpinned-uses]
+        with:
+          arch: arm64
+
+      - uses: $/.github/actions/setup-nsinstall
+
+      - name: Configure, build and test
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          # Git's coreutils "link" shadows MSVC's linker, which configure uses as LD.
+          rm -f /usr/bin/link.exe
+          .github/scripts/build-and-test.sh --target=aarch64-pc-mingw32 --enable-win32-target=WIN95
+
+      - name: Check that the DLL targets arm64
+        if: ${{ !cancelled() && hashFiles('target/dist/lib/nspr4.dll') != '' }}
+        run: dumpbin -headers target/dist/lib/nspr4.dll | grep -Fi "machine (arm64)"
 
   # MSVC has no gcov, so mingw is the only Windows toolchain here that can
   # produce coverage.
