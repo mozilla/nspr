@@ -25,6 +25,8 @@
 #define _PR_SI_ARCHITECTURE "sparc"
 #elif defined(__arm__)
 #define _PR_SI_ARCHITECTURE "arm"
+#elif defined(__riscv) && (__riscv_xlen == 64)
+#define _PR_SI_ARCHITECTURE "riscv64"
 #endif
 
 #define PR_DLL_SUFFIX ".so"
