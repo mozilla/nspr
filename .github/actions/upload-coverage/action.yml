@@ -14,6 +14,9 @@ inputs:
   plugins:
     description: Codecov CLI plugins; "noop" where gcov has already been run.
     default: ""
+  file:
+    description: Coverage report to upload instead of searching for gcov data.
+    default: ""
 
 runs:
   using: composite
@@ -24,10 +27,17 @@ runs:
       id: check
       shell: bash
       env:
+        FILE: ${{ inputs.file }}
         FLAGS: ${{ inputs.flags }}
       run: |
         # .gcda where Codecov runs gcov itself, .gcov where a VM already did.
-        if [ -n "$(find . \( -name '*.gcda' -o -name '*.gcov' \) -print -quit)" ]; then
+        found=
+        if [ -n "$FILE" ]; then
+          if [ -f "$FILE" ]; then found=$FILE; fi
+        else
+          found=$(find . \( -name '*.gcda' -o -name '*.gcov' \) -print -quit)
+        fi
+        if [ -n "$found" ]; then
           echo "found=true" >>"$GITHUB_OUTPUT"
         else
           echo "::warning::No coverage data for $FLAGS; skipping upload"
@@ -38,6 +48,8 @@ runs:
       with:
         gcov_executable: ${{ inputs.gcov }}
         plugins: ${{ inputs.plugins }}
+        files: ${{ inputs.file }}
+        disable_search: ${{ inputs.file != '' }}
         flags: ${{ inputs.flags }}
         fail_ci_if_error: true
         token: ${{ inputs.token }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
