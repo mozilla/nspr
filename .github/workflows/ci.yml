@@ -52,14 +52,14 @@ jobs:
           chmod +x "$RUNNER_TEMP/llvm-gcov"
           echo "$RUNNER_TEMP" >>"$GITHUB_PATH"
 
-      - uses: ./.github/actions/build-and-test
+      - uses: $/.github/actions/build-and-test
         with:
           cc: ${{ matrix.cc }}
           coverage: ${{ matrix.coverage }}
 
       # Upload even when a test failed; the tests that ran still wrote data.
       - if: ${{ !cancelled() && matrix.coverage }}
-        uses: ./.github/actions/upload-coverage
+        uses: $/.github/actions/upload-coverage
         with:
           gcov: ${{ matrix.gcov || 'gcov' }}
           flags: ${{ matrix.os }}${{ matrix.cc && format('-{0}', matrix.cc) || '' }}
@@ -74,7 +74,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/build-and-test
+      - uses: $/.github/actions/build-and-test
         with:
           cc: clang
           cflags: "-Wall -Werror -Qunused-arguments"
@@ -125,7 +125,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/build-and-test
+      - uses: $/.github/actions/build-and-test
         with:
           cc: clang
           cflags: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
@@ -161,7 +161,7 @@ jobs:
       - name: Install 32-bit toolchain
         run: sudo apt-get update && sudo apt-get install -y gcc-multilib
 
-      - uses: ./.github/actions/build-and-test
+      - uses: $/.github/actions/build-and-test
         with:
           cc: gcc
           cflags: -m32
@@ -170,7 +170,7 @@ jobs:
           coverage: "true"
 
       - if: ${{ !cancelled() }}
-        uses: ./.github/actions/upload-coverage
+        uses: $/.github/actions/upload-coverage
         with:
           flags: ubuntu-latest-gcc-x86
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
@@ -270,7 +270,7 @@ jobs:
         run: Add-Content $env:GITHUB_PATH 'C:\msys64\ucrt64\bin'
 
       - if: ${{ !cancelled() }}
-        uses: ./.github/actions/upload-coverage
+        uses: $/.github/actions/upload-coverage
         with:
           flags: windows-mingw
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.

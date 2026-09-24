@@ -1,0 +1,5 @@
+# actionlint 1.7.12 does not know the `$/` syntax, see https://github.com/rhysd/actionlint/issues/711
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - 'specifying action "\$/[^"]+" in invalid format because ref is missing'
