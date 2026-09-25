@@ -353,6 +353,7 @@ endif # WINNT
 endif # AIX_PRE_4_2
 
 export:: $(TARGETS)
+all:: $(TARGETS) # GNU make 3.81 -j can skip export:: $(TARGETS) after the dll sub-make.
 clean::
 	rm -f $(TARGETS) runtests
 

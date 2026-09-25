@@ -486,7 +486,7 @@ $(filter $(OBJDIR)/%.$(OBJ_SUFFIX),$(OBJS)): $(OBJDIR)/%.$(OBJ_SUFFIX): $(DUMMY_
 # Disallow parallel builds with MSVC < 8 since it can't open the PDB file in
 # parallel.
 #
-ifeq (,$(filter-out 1200 1300 1310,$(MSC_VER)))
+ifneq (,$(filter 1200 1300 1310,$(MSC_VER)))
 .NOTPARALLEL:
 endif
 
