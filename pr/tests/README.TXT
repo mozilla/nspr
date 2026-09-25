@@ -201,6 +201,8 @@ pipepong.c
 pipeself.c
 	Tests inter-thread pipes.
 
+pollable.c
+	Tests pollable events. prio.h
 
 poll_er.c
 	Tests PR_Poll() where an error is expected.

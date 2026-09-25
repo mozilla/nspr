@@ -49,6 +49,7 @@ EXPORTS ;-
 		PR_CWait;
 		PR_CallOnce;
 		PR_Calloc;
+		PR_CancelJob;
 		PR_CancelWaitFileDesc;
 		PR_CancelWaitGroup;
 		PR_CeilingLog2;
@@ -73,6 +74,7 @@ EXPORTS ;-
 		PR_CreateStack;
 		PR_CreateThread;
 		PR_CreateThreadGCAble;
+		PR_CreateThreadPool;
 		PR_CreateWaitGroup;
 		PR_Delete;
 		PR_DeleteSemaphore;
@@ -81,6 +83,7 @@ EXPORTS ;-
 		PR_DestroyLock;
 		PR_DestroyMWaitEnumerator;
 		PR_DestroyMonitor;
+		PR_DestroyPollableEvent;
 		PR_DestroyProcessAttr;
 		PR_DestroyRWLock;
 		PR_DestroySem;
@@ -185,7 +188,9 @@ EXPORTS ;-
 		PR_IntervalToMilliseconds;
 		PR_IntervalToSeconds;
 		PR_IsNetAddrType;
+		PR_JoinJob;
 		PR_JoinThread;
+		PR_JoinThreadPool;
 		PR_KillProcess;
 		PR_Listen;
 		PR_LoadLibrary;
@@ -209,6 +214,7 @@ EXPORTS ;-
 		PR_NewLogModule;
 		PR_NewMonitor;
 		PR_NewNamedMonitor;
+		PR_NewPollableEvent;
 		PR_NewProcessAttr;
 		PR_NewRWLock;
 		PR_NewSem;
@@ -241,6 +247,12 @@ EXPORTS ;-
 		PR_ProcessAttrSetStdioRedirect;
 		PR_ProcessExit;
 		PR_PushIOLayer;
+		PR_QueueJob;
+		PR_QueueJob_Accept;
+		PR_QueueJob_Connect;
+		PR_QueueJob_Read;
+		PR_QueueJob_Timer;
+		PR_QueueJob_Write;
 		PR_RWLock_Rlock;
 		PR_RWLock_Unlock;
 		PR_RWLock_Wlock;
@@ -269,6 +281,7 @@ EXPORTS ;-
 		PR_SetLogBuffering;
 		PR_SetLogFile;
 		PR_SetNetAddr;
+		PR_SetPollableEvent;
 		PR_SetSocketOption;
 		PR_SetStdioRedirect;
 		PR_SetSysfdTableSize;
@@ -278,6 +291,7 @@ EXPORTS ;-
 		PR_SetThreadPrivate;
 		PR_SetThreadRecycleMode;
 		PR_Shutdown;
+		PR_ShutdownThreadPool;
 		PR_Sleep;
 		PR_Socket;
 		PR_StackPop;
@@ -298,6 +312,7 @@ EXPORTS ;-
 		PR_VersionCheck;
 		PR_Wait;
 		PR_WaitCondVar;
+		PR_WaitForPollableEvent;
 		PR_WaitProcess;
 		PR_WaitRecvReady;
 		PR_WaitSem;
