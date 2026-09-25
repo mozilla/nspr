@@ -41,6 +41,7 @@ else
 CSRCS =	\
 	prcmon.c  \
 	prmon.c   \
+	prsem.c   \
 	prrwlock.c   \
 	prcthr.c \
 	prtpd.c \

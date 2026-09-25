@@ -22,6 +22,7 @@ accept.c
 acceptread.c
 	Tests PR_AcceptRead()
 
+
 atomic.c
 	Tests Atomic operations defined in pratom.h
 
@@ -67,6 +68,10 @@ dtoa.c
 
 exit.c
 	Tests PR_ProcessExit() declared in prinit.h
+
+fileio.c
+	Tests NSPR semaphores a bit of file i/o and threading
+	functions.
 
 foreign.c
 	Test auto-attach of a thread created by something other than
@@ -155,6 +160,9 @@ nbconn.c
 nblayer.c
 	Tests NSPR's layered I/O capability.
 
+nonblock.c
+	Tests operations on non-blocking socket.
+
 op_2long.c
 	Tests PR_Open() where filename is too long.
 
@@ -217,6 +225,9 @@ provider.c
 prpoll.c
 	Tests PR_Poll().
 
+prselect.c
+	Obsolete. PR_Select() is obsolete.
+
 prttools.h
 	Unused file.
 
@@ -241,8 +252,23 @@ runtests.txt
 rwlocktest.c
 	Tests Reader/Writer lock
 
+selct_er.c
+	Obsolete. PR_Select() is obsolete.
+
+selct_nm.c
+	Obsolete. PR_Select() is obsolete.
+
+selct_to.c
+	Obsolete. PR_Select() is obsolete.
+
+select2.c
+	Obsolete. PR_Select() is obsolete.
+
 sel_spd.c
-	Measures the speed of PR_Poll() loops.
+	Obsolete. PR_Select() is obsolete.
+
+sem.c
+	Obsolete. Semaphores are not supported.
 
 server_test.c
 	Tests sockets by simulating a server in loopback mode.

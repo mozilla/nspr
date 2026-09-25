@@ -3,14 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /***********************************************************************
+**  1997 - Netscape Communications Corporation
 **
-** Name: prpoll_norm.c
+** Name: prselect_norm.c
 **
-** Description: This program tests PR_Poll with sockets.
-**              Normal operation are tested
+** Description: tests PR_Select with sockets - Normal operations.
 **
 ** Modification History:
-** 19-May-97 AGarcia- Converted the test to accomodate the debug_mode flag.
+** 14-May-97 AGarcia- Converted the test to accomodate the debug_mode flag.
 **           The debug mode will print all of the printfs associated with this
 *test.
 **           The regress mode will be the default mode. Since the regress tool
@@ -33,10 +33,10 @@
 #include "prio.h"
 #include "prlog.h"
 #include "prprf.h"
+#include "prerror.h"
 #include "prnetdb.h"
-#include "obsolete/probslet.h"
 
-#include "private/pprio.h"
+#include "obsolete/probslet.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -45,9 +45,7 @@
 PRIntn failed_already = 0;
 PRIntn debug_mode;
 
-#define NUM_ITERATIONS 5
-
-static void PR_CALLBACK
+static void
 clientThreadFunc(void* arg)
 {
     PRUintn port = (PRUintn)arg;
@@ -55,43 +53,33 @@ clientThreadFunc(void* arg)
     PRNetAddr addr;
     char buf[128];
     int i;
-    PRStatus sts;
-    PRInt32 n;
 
     addr.inet.family = PR_AF_INET;
     addr.inet.port = PR_htons((PRUint16)port);
     addr.inet.ip = PR_htonl(PR_INADDR_LOOPBACK);
-    memset(buf, 0, sizeof(buf));
-    PR_snprintf(buf, sizeof(buf), "%hu", port);
+    PR_snprintf(buf, sizeof(buf), "%hu", addr.inet.port);
 
-    for (i = 0; i < NUM_ITERATIONS; i++) {
+    for (i = 0; i < 5; i++) {
         sock = PR_NewTCPSocket();
-        PR_ASSERT(sock != NULL);
-
-        sts = PR_Connect(sock, &addr, PR_INTERVAL_NO_TIMEOUT);
-        PR_ASSERT(sts == PR_SUCCESS);
-
-        n = PR_Write(sock, buf, sizeof(buf));
-        PR_ASSERT(n >= 0);
-
-        sts = PR_Close(sock);
-        PR_ASSERT(sts == PR_SUCCESS);
+        PR_Connect(sock, &addr, PR_INTERVAL_NO_TIMEOUT);
+        PR_Write(sock, buf, sizeof(buf));
+        PR_Close(sock);
     }
 }
 
 int
 main(int argc, char** argv)
 {
-    PRFileDesc *listenSock1 = NULL, *listenSock2 = NULL;
+    PRFileDesc *listenSock1, *listenSock2;
+    PRFileDesc *fds0[10], *fds1[10], **fds, **other_fds;
+    PRIntn nfds;
     PRUint16 listenPort1, listenPort2;
     PRNetAddr addr;
+    PR_fd_set readFdSet;
     char buf[128];
     PRThread* clientThread;
-    PRPollDesc pds0[20], pds1[20], *pds, *other_pds;
-    PRIntn npds;
     PRInt32 retVal;
     PRIntn i, j;
-    PRSocketOptionData optval;
 
     /* The command line argument: -d is used to determine if the test is being run
     in debug mode. The regress tool requires only one line output:PASS or FAIL.
@@ -119,8 +107,8 @@ main(int argc, char** argv)
     PR_Init(PR_USER_THREAD, PR_PRIORITY_NORMAL, 0);
 
     if (debug_mode) {
-        printf("This program tests PR_Poll with sockets.\n");
-        printf("Normal operation are tested.\n\n");
+        printf("This program tests PR_Select with sockets.  \n");
+        printf(" Normal operation are tested.\n\n");
     }
 
     /* Create two listening sockets */
@@ -129,7 +117,6 @@ main(int argc, char** argv)
         failed_already = 1;
         goto exit_now;
     }
-    memset(&addr, 0, sizeof(addr));
     addr.inet.family = PR_AF_INET;
     addr.inet.ip = PR_htonl(PR_INADDR_ANY);
     addr.inet.port = PR_htons(0);
@@ -144,9 +131,6 @@ main(int argc, char** argv)
         goto exit_now;
     }
     listenPort1 = PR_ntohs(addr.inet.port);
-    optval.option = PR_SockOpt_Nonblocking;
-    optval.value.non_blocking = PR_TRUE;
-    PR_SetSocketOption(listenSock1, &optval);
     if (PR_Listen(listenSock1, 5) == PR_FAILURE) {
         fprintf(stderr, "Can't listen on a socket\n");
         failed_already = 1;
@@ -172,7 +156,6 @@ main(int argc, char** argv)
         goto exit_now;
     }
     listenPort2 = PR_ntohs(addr.inet.port);
-    PR_SetSocketOption(listenSock2, &optval);
     if (PR_Listen(listenSock2, 5) == PR_FAILURE) {
         fprintf(stderr, "Can't listen on a socket\n");
         failed_already = 1;
@@ -184,20 +167,6 @@ main(int argc, char** argv)
     if (debug_mode) {
         printf("%s", buf);
     }
-
-    /* Set up the poll descriptor array */
-    pds = pds0;
-    other_pds = pds1;
-    memset(pds, 0, sizeof(pds));
-    pds[0].fd = listenSock1;
-    pds[0].in_flags = PR_POLL_READ;
-    pds[1].fd = listenSock2;
-    pds[1].in_flags = PR_POLL_READ;
-    /* Add some unused entries to test if they are ignored by PR_Poll() */
-    memset(&pds[2], 0, sizeof(pds[2]));
-    memset(&pds[3], 0, sizeof(pds[3]));
-    memset(&pds[4], 0, sizeof(pds[4]));
-    npds = 5;
 
     clientThread = PR_CreateThread(PR_USER_THREAD, clientThreadFunc,
                                    (void*)listenPort1, PR_PRIORITY_NORMAL,
@@ -224,18 +193,30 @@ main(int argc, char** argv)
         printf("the data five times, so you should see ten lines below,\n");
         printf("interleaved in an arbitrary order.\n");
     }
+    /* set up the fd array */
+    fds = fds0;
+    other_fds = fds1;
+    fds[0] = listenSock1;
+    fds[1] = listenSock2;
+    nfds = 2;
+    /* Set up the fd set */
+    PR_FD_ZERO(&readFdSet);
+    PR_FD_SET(listenSock1, &readFdSet);
+    PR_FD_SET(listenSock2, &readFdSet);
 
-    /* two clients, three events per iteration: accept, read, close */
+    /* 20 events total */
     i = 0;
-    while (i < 2 * 3 * NUM_ITERATIONS) {
-        PRPollDesc* tmp;
+    while (i < 20) {
+        PRFileDesc** tmp;
         int nextIndex;
         int nEvents = 0;
 
-        retVal = PR_Poll(pds, npds, PR_INTERVAL_NO_TIMEOUT);
+        retVal = PR_Select(0 /* unused */, &readFdSet, NULL, NULL,
+                           PR_INTERVAL_NO_TIMEOUT);
         PR_ASSERT(retVal != 0); /* no timeout */
         if (retVal == -1) {
-            fprintf(stderr, "PR_Poll failed\n");
+            fprintf(stderr, "PR_Select failed (%d, %d)\n", PR_GetError(),
+                    PR_GetOSError());
             failed_already = 1;
             goto exit_now;
         }
@@ -243,106 +224,65 @@ main(int argc, char** argv)
         nextIndex = 2;
         /* the two listening sockets */
         for (j = 0; j < 2; j++) {
-            other_pds[j] = pds[j];
-            PR_ASSERT((pds[j].out_flags & PR_POLL_WRITE) == 0 &&
-                      (pds[j].out_flags & PR_POLL_EXCEPT) == 0);
-            if (pds[j].out_flags & PR_POLL_READ) {
+            other_fds[j] = fds[j];
+            if (PR_FD_ISSET(fds[j], &readFdSet)) {
                 PRFileDesc* sock;
 
                 nEvents++;
-                sock = PR_Accept(pds[j].fd, NULL, PR_INTERVAL_NO_TIMEOUT);
+                sock = PR_Accept(fds[j], NULL, PR_INTERVAL_NO_TIMEOUT);
                 if (sock == NULL) {
                     fprintf(stderr, "PR_Accept() failed\n");
                     failed_already = 1;
                     goto exit_now;
                 }
-                other_pds[nextIndex].fd = sock;
-                other_pds[nextIndex].in_flags = PR_POLL_READ;
+                other_fds[nextIndex] = sock;
+                PR_FD_SET(sock, &readFdSet);
                 nextIndex++;
-            } else if (pds[j].out_flags & PR_POLL_ERR) {
-                fprintf(stderr, "PR_Poll() indicates that an fd has error\n");
-                failed_already = 1;
-                goto exit_now;
-            } else if (pds[j].out_flags & PR_POLL_NVAL) {
-                fprintf(stderr, "PR_Poll() indicates that fd %d is invalid\n",
-                        PR_FileDesc2NativeHandle(pds[j].fd));
-                failed_already = 1;
-                goto exit_now;
             }
+            PR_FD_SET(fds[j], &readFdSet);
         }
 
-        for (j = 2; j < npds; j++) {
-            if (NULL == pds[j].fd) {
-                /*
-                 * Keep the unused entries in the poll descriptor array
-                 * for testing purposes.
-                 */
-                other_pds[nextIndex] = pds[j];
-                nextIndex++;
-                continue;
-            }
+        for (j = 2; j < nfds; j++) {
+            if (PR_FD_ISSET(fds[j], &readFdSet)) {
+                PRInt32 nBytes;
 
-            PR_ASSERT((pds[j].out_flags & PR_POLL_WRITE) == 0 &&
-                      (pds[j].out_flags & PR_POLL_EXCEPT) == 0);
-            if (pds[j].out_flags & PR_POLL_READ) {
-                PRInt32 nAvail;
-                PRInt32 nRead;
-
+                PR_FD_CLR(fds[j], &readFdSet);
                 nEvents++;
-                nAvail = PR_Available(pds[j].fd);
-                nRead = PR_Read(pds[j].fd, buf, sizeof(buf));
-                PR_ASSERT(nAvail == nRead);
-                if (nRead == -1) {
+                nBytes = PR_Read(fds[j], buf, sizeof(buf));
+                if (nBytes == -1) {
                     fprintf(stderr, "PR_Read() failed\n");
                     failed_already = 1;
                     goto exit_now;
-                } else if (nRead == 0) {
-                    PR_Close(pds[j].fd);
-                    continue;
-                } else {
-                    /* Just to be safe */
-                    buf[127] = '\0';
-                    if (debug_mode) {
-                        printf("The server received \"%s\" from a client\n", buf);
-                    }
                 }
-            } else if (pds[j].out_flags & PR_POLL_ERR) {
-                fprintf(stderr, "PR_Poll() indicates that an fd has error\n");
-                failed_already = 1;
-                goto exit_now;
-            } else if (pds[j].out_flags & PR_POLL_NVAL) {
-                fprintf(stderr, "PR_Poll() indicates that an fd is invalid\n");
-                failed_already = 1;
-                goto exit_now;
+                /* Just to be safe */
+                buf[127] = '\0';
+                PR_Close(fds[j]);
+                if (debug_mode) {
+                    printf("The server received \"%s\" from a client\n", buf);
+                }
+            } else {
+                PR_FD_SET(fds[j], &readFdSet);
+                other_fds[nextIndex] = fds[j];
+                nextIndex++;
             }
-            other_pds[nextIndex] = pds[j];
-            nextIndex++;
         }
 
         PR_ASSERT(retVal == nEvents);
         /* swap */
-        tmp = pds;
-        pds = other_pds;
-        other_pds = tmp;
-        npds = nextIndex;
+        tmp = fds;
+        fds = other_fds;
+        other_fds = tmp;
+        nfds = nextIndex;
         i += nEvents;
     }
 
     if (debug_mode) {
-        printf("Tests passed\n");
-    }
-
-exit_now:
-
-    if (listenSock1) {
-        PR_Close(listenSock1);
-    }
-    if (listenSock2) {
-        PR_Close(listenSock2);
+        printf("Test passed\n");
     }
 
     PR_Cleanup();
-
+    goto exit_now;
+exit_now:
     if (failed_already) {
         return 1;
     } else {
