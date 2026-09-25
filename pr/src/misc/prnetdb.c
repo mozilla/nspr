@@ -2315,6 +2315,7 @@ PR_GetAddrInfoByName(const char* hostname, PRUint16 af, PRIntn flags)
          */
         hints.ai_socktype = SOCK_STREAM;
 
+        LOCK_DNS();
         rv = GETADDRINFO(hostname, NULL, &hints, &res);
 #ifdef AI_ADDRCONFIG
         if (rv == EAI_BADFLAGS && (hints.ai_flags & AI_ADDRCONFIG)) {
@@ -2322,6 +2323,7 @@ PR_GetAddrInfoByName(const char* hostname, PRUint16 af, PRIntn flags)
             rv = GETADDRINFO(hostname, NULL, &hints, &res);
         }
 #endif
+        UNLOCK_DNS();
         if (rv == 0) {
             return (PRAddrInfo*)res;
         }
