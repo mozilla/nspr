@@ -3,6 +3,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// Include section to mark as compatible with Intel CET if enabled.
+#if defined(__has_include)
+#if __has_include(<cet.h>)
+#include <cet.h>
+#endif
+#endif
+
+#ifndef _CET_ENDBR
+#define _CET_ENDBR
+#endif
+
 // PRInt32 _PR_x86_AtomicIncrement(PRInt32 *val)
 //
 // Atomically increment the integer pointed to by 'val' and return
@@ -12,6 +23,7 @@
     .globl _PR_x86_AtomicIncrement
     .align 4
 _PR_x86_AtomicIncrement:
+    _CET_ENDBR
     movl 4(%esp), %ecx
     movl $1, %eax
     lock
@@ -28,6 +40,7 @@ _PR_x86_AtomicIncrement:
     .globl _PR_x86_AtomicDecrement
     .align 4
 _PR_x86_AtomicDecrement:
+    _CET_ENDBR
     movl 4(%esp), %ecx
     movl $-1, %eax
     lock
@@ -45,6 +58,7 @@ _PR_x86_AtomicDecrement:
 //   .globl _PR_x86_AtomicSet
 //   .align 4
 //_PR_x86_AtomicSet:
+//   _CET_ENDBR
 //   movl 4(%esp), %ecx
 //   movl 8(%esp), %edx
 //   movl (%ecx), %eax
@@ -58,6 +72,7 @@ _PR_x86_AtomicDecrement:
     .globl _PR_x86_AtomicSet
     .align 4
 _PR_x86_AtomicSet:
+    _CET_ENDBR
     movl 4(%esp), %ecx
     movl 8(%esp), %eax
     xchgl %eax, (%ecx)
@@ -72,6 +87,7 @@ _PR_x86_AtomicSet:
     .globl _PR_x86_AtomicAdd
     .align 4
 _PR_x86_AtomicAdd:
+    _CET_ENDBR
     movl 4(%esp), %ecx
     movl 8(%esp), %eax
     movl %eax, %edx

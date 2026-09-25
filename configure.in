@@ -1422,22 +1422,24 @@ tools are selected during the Xcode/Developer Tools installation.])
         CXXFLAGS="$CXXFLAGS -mieee"
         ;;
     i*86)
+        ASM_SUFFIX=S
         AC_DEFINE(i386)
-        PR_MD_ASFILES=os_Linux_x86.s
+        PR_MD_ASFILES=os_Linux_x86.S
         ;;
     ia64)
         PR_MD_ASFILES=os_Linux_ia64.s
         ;;
     x86_64)
+        ASM_SUFFIX=S
         if test -n "$USE_64"; then
-            PR_MD_ASFILES=os_Linux_x86_64.s
+            PR_MD_ASFILES=os_Linux_x86_64.S
         elif test -n "$USE_X32"; then
-            PR_MD_ASFILES=os_Linux_x86_64.s
+            PR_MD_ASFILES=os_Linux_x86_64.S
             CC="$CC -mx32"
             CXX="$CXX -mx32"
         else
             AC_DEFINE(i386)
-            PR_MD_ASFILES=os_Linux_x86.s
+            PR_MD_ASFILES=os_Linux_x86.S
             CC="$CC -m32"
             CXX="$CXX -m32"
         fi
