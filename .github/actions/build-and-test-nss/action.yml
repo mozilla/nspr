@@ -107,6 +107,10 @@ runs:
           # init.sh's Windows PATH rewrite uses ';' and breaks bash; do it ourselves.
           export DON_T_SET_PATHS=TRUE
           export PATH=".:$GITHUB_WORKSPACE/dist/Debug/bin:$GITHUB_WORKSPACE/dist/Debug/lib:$PATH"
+
+          # TODO: temporary diagnostics for #28 (sqlite3) and #117 (CRLF); remove after.
+          command -v sqlite3 || where.exe sqlite3.exe 2>/dev/null || echo "sqlite3 not found anywhere"
+          od -c smime/alice.txt | head -3
         else
           printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" | sudo tee -a /etc/hosts >/dev/null
         fi
