@@ -70,7 +70,7 @@ runs:
           nss_nspr_lib_dir="$repo/target/nss-nspr/lib"
           mkdir -p "$nss_nspr_lib_dir"
           for lib in nspr4 plc4 plds4; do
-            cp "$nspr_lib_dir/$lib.lib" "$nss_nspr_lib_dir/lib$lib.lib"
+            cp "$nspr_lib_dir/$lib.lib" "$nss_nspr_lib_dir/$lib.lib"
             cp "$nspr_lib_dir/$lib.dll" "$repo/dist/Debug/lib/"
           done
 
