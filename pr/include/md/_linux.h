@@ -105,16 +105,15 @@
 #endif
 
 #if defined(__i386__)
+#if defined(__GNUC__) && defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
+/* Use GCC built-in functions */
 #define _PR_HAVE_ATOMIC_OPS
 #define _MD_INIT_ATOMIC()
-extern PRInt32 _PR_x86_AtomicIncrement(PRInt32* val);
-#define _MD_ATOMIC_INCREMENT _PR_x86_AtomicIncrement
-extern PRInt32 _PR_x86_AtomicDecrement(PRInt32* val);
-#define _MD_ATOMIC_DECREMENT _PR_x86_AtomicDecrement
-extern PRInt32 _PR_x86_AtomicAdd(PRInt32* ptr, PRInt32 val);
-#define _MD_ATOMIC_ADD _PR_x86_AtomicAdd
-extern PRInt32 _PR_x86_AtomicSet(PRInt32* val, PRInt32 newval);
-#define _MD_ATOMIC_SET _PR_x86_AtomicSet
+#define _MD_ATOMIC_INCREMENT(ptr) __sync_add_and_fetch(ptr, 1)
+#define _MD_ATOMIC_DECREMENT(ptr) __sync_sub_and_fetch(ptr, 1)
+#define _MD_ATOMIC_ADD(ptr, i) __sync_add_and_fetch(ptr, i)
+#define _MD_ATOMIC_SET(ptr, nv) __sync_lock_test_and_set(ptr, nv)
+#endif
 #endif
 
 #if defined(__ia64__)
@@ -131,16 +130,15 @@ extern PRInt32 _PR_ia64_AtomicSet(PRInt32* val, PRInt32 newval);
 #endif
 
 #if defined(__x86_64__)
+#if defined(__GNUC__)
+/* Use GCC built-in functions */
 #define _PR_HAVE_ATOMIC_OPS
 #define _MD_INIT_ATOMIC()
-extern PRInt32 _PR_x86_64_AtomicIncrement(PRInt32* val);
-#define _MD_ATOMIC_INCREMENT _PR_x86_64_AtomicIncrement
-extern PRInt32 _PR_x86_64_AtomicDecrement(PRInt32* val);
-#define _MD_ATOMIC_DECREMENT _PR_x86_64_AtomicDecrement
-extern PRInt32 _PR_x86_64_AtomicAdd(PRInt32* ptr, PRInt32 val);
-#define _MD_ATOMIC_ADD _PR_x86_64_AtomicAdd
-extern PRInt32 _PR_x86_64_AtomicSet(PRInt32* val, PRInt32 newval);
-#define _MD_ATOMIC_SET _PR_x86_64_AtomicSet
+#define _MD_ATOMIC_INCREMENT(ptr) __sync_add_and_fetch(ptr, 1)
+#define _MD_ATOMIC_DECREMENT(ptr) __sync_sub_and_fetch(ptr, 1)
+#define _MD_ATOMIC_ADD(ptr, i) __sync_add_and_fetch(ptr, i)
+#define _MD_ATOMIC_SET(ptr, nv) __sync_lock_test_and_set(ptr, nv)
+#endif
 #endif
 
 #if defined(__loongarch__)
