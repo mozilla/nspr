@@ -104,11 +104,9 @@ runs:
         if [ "$RUNNER_OS" = Windows ]; then
           printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" >>/c/Windows/System32/drivers/etc/hosts
 
-          # TODO: temporary diagnostic for missing POSIX tools on Windows; remove once diagnosed.
-          echo "PATH=$PATH"
-          for tool in mkdir grep sed tee uname certutil; do
-            command -v "$tool" || echo "$tool: not found"
-          done
+          # init.sh's Windows PATH rewrite uses ';' and breaks bash; do it ourselves.
+          export DON_T_SET_PATHS=TRUE
+          export PATH=".:$GITHUB_WORKSPACE/dist/Debug/bin:$GITHUB_WORKSPACE/dist/Debug/lib:$PATH"
         else
           printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" | sudo tee -a /etc/hosts >/dev/null
         fi
