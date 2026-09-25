@@ -103,7 +103,24 @@ runs:
       run: |
         if [ "$RUNNER_OS" = Windows ]; then
           printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" >>/c/Windows/System32/drivers/etc/hosts
+
+          # TODO: temporary diagnostic for missing POSIX tools on Windows; remove once diagnosed.
+          echo "PATH=$PATH"
+          for tool in mkdir grep sed tee uname certutil; do
+            command -v "$tool" || echo "$tool: not found"
+          done
         else
           printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" | sudo tee -a /etc/hosts >/dev/null
         fi
-        ./all.sh
+
+        ./all.sh 2>&1 | tee all.log
+
+        # all.sh can exit 0 having run nothing (e.g. missing POSIX tools
+        # leave init.sh unable to create results files), so check its
+        # summary explicitly rather than trusting the exit code.
+        passed=$(sed -n 's/^Passed:[[:space:]]*\([0-9]*\)$/\1/p' all.log)
+        failed=$(sed -n 's/^Failed:[[:space:]]*\([0-9]*\)$/\1/p' all.log)
+        if [ -z "$passed" ] || [ "$passed" -eq 0 ] || [ -z "$failed" ] || [ "$failed" -ne 0 ]; then
+          echo "::error::NSS test summary missing or shows failures (Passed='$passed' Failed='$failed')"
+          exit 1
+        fi
