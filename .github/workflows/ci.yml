@@ -210,6 +210,9 @@ jobs:
           - arch: x86
             cc: clang-cl
             cflags: --target=i686-pc-windows-msvc
+          - arch: x64
+            cc: cl
+            coverage: msvc
     env:
       MSYSTEM: MSYS
       CHERE_INVOKING: 1
@@ -241,11 +244,19 @@ jobs:
           CC: ${{ matrix.cc }}
           CFLAGS: ${{ matrix.cflags }}
           NSPR_32BIT: ${{ matrix.arch == 'x86' && '1' || '' }}
+          NSPR_COVERAGE: ${{ matrix.coverage }}
         run: |
           # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
           rm -f /usr/bin/link.exe
           export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/$ARCH:$PATH"
           .github/scripts/build-and-test.sh --enable-win32-target=WIN95
+
+      - if: ${{ !cancelled() && matrix.coverage }}
+        uses: $/.github/actions/upload-coverage
+        with:
+          file: coverage.cobertura.xml
+          flags: windows-${{ matrix.arch }}-${{ matrix.cc }}
+          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
   windows-arm64:
     name: windows-11-arm (${{ matrix.cc }})
@@ -254,6 +265,9 @@ jobs:
       fail-fast: false
       matrix:
         cc: [cl, clang-cl]
+        include:
+          - cc: cl
+            coverage: msvc
     defaults:
       run:
         shell: bash
@@ -273,6 +287,7 @@ jobs:
       - name: Configure, build and test
         env:
           CC: ${{ matrix.cc }}
+          NSPR_COVERAGE: ${{ matrix.coverage }}
         run: |
           # Git's coreutils "link" shadows MSVC's linker, which configure uses as LD.
           rm -f /usr/bin/link.exe
@@ -282,8 +297,13 @@ jobs:
         if: ${{ !cancelled() && hashFiles('target/dist/lib/nspr4.dll') != '' }}
         run: dumpbin -headers target/dist/lib/nspr4.dll | grep -Fi "machine (arm64)"
 
-  # MSVC has no gcov, so mingw is the only Windows toolchain here that can
-  # produce coverage.
+      - if: ${{ !cancelled() && matrix.coverage }}
+        uses: $/.github/actions/upload-coverage
+        with:
+          file: coverage.cobertura.xml
+          flags: windows-arm64-${{ matrix.cc }}
+          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
+
   windows-mingw:
     name: windows-latest (mingw-gcc, coverage)
     runs-on: windows-latest
