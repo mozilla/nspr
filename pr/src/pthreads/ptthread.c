@@ -12,6 +12,7 @@
 
 #include "prlog.h"
 #include "primpl.h"
+#include "prpdce.h"
 
 #include <pthread.h>
 #include <unistd.h>
