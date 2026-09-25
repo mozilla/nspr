@@ -76,12 +76,6 @@ runs:
 
           msvc_bin=$(dirname "$(command -v cl.exe)")
           export PATH="$msvc_bin:$PATH"
-
-          # NSS's gyp build only links advapi32.lib (needed by freebl's
-          # sysrand.c) when static_libs=1, which we don't set. LINK is
-          # prepended to every link.exe invocation. See bugzilla.mozilla.org
-          # 1551129.
-          export LINK=advapi32.lib
         else
           cp "$nspr_lib_dir"/lib{nspr4,plc4,plds4}.* "$repo/dist/Debug/lib/"
         fi
@@ -90,6 +84,11 @@ runs:
         build_args=()
         [ -z "$NSS_CC" ] || build_args+=("--$NSS_CC")
         [ -z "$NSS_TARGET" ] || build_args+=(--target="$NSS_TARGET")
+        # gyp only links advapi32.lib (needed by freebl's sysrand.c) into
+        # gtests when static_libs=1; without it, softoken_static_gtest fails
+        # to link. See bugzilla.mozilla.org 1551129 and (filed for this gap)
+        # bugzilla.mozilla.org 2075525.
+        [ "$RUNNER_OS" = Windows ] && build_args+=(-Dstatic_libs=1)
 
         cd "$repo/nss"
         CFLAGS='' CXXFLAGS='' LDFLAGS='' ./build.sh "${build_args[@]}" \
