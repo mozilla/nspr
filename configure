@@ -7531,11 +7531,22 @@ case "$target" in
         printf "%s\n" "#define _PR_LOCAL_THREADS_ONLY 1" >>confdefs.h
 
     fi
+    # Android has no librt; realtime functions are in libc
+    if test "$OS_TARGET" = Android; then
+        OS_LIBS="$OS_LIBS -llog"
+    else
+        OS_LIBS="$OS_LIBS -lrt"
+    fi
     ;;
 *-mingw*|*-msys*|*-cygwin*|*-mks*)
         USE_PTHREADS=
     _PTHREAD_LDFLAGS=
     USE_USER_PTHREADS=
+    if test -n "$GNU_CC"; then
+        OS_LIBS="$OS_LIBS -ladvapi32 -lws2_32 -lmswsock -lwinmm"
+    else
+        OS_LIBS="$OS_LIBS advapi32.lib ws2_32.lib mswsock.lib winmm.lib"
+    fi
     ;;
 *-netbsd*|*-openbsd*)
     if test -n "$USE_NSPR_THREADS"; then
@@ -7571,6 +7582,7 @@ case "$target" in
             fi
         fi
     fi
+    OS_LIBS="$OS_LIBS -lsocket -lnsl -lc"
     ;;
 *-nto*)
     if test -n "$USE_PTHREADS"; then
