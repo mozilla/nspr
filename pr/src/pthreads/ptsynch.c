@@ -575,7 +575,7 @@ PR_GetMonitorEntryCount(PRMonitor* mon)
 
     rv = pthread_mutex_lock(&mon->lock);
     PR_ASSERT(0 == rv);
-    if (pthread_equal(mon->owner, self)) {
+    if (mon->entryCount != 0 && pthread_equal(mon->owner, self)) {
         count = mon->entryCount;
     }
     rv = pthread_mutex_unlock(&mon->lock);
