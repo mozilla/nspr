@@ -76,6 +76,12 @@ runs:
 
           msvc_bin=$(dirname "$(command -v cl.exe)")
           export PATH="$msvc_bin:$PATH"
+
+          # NSS's gyp build only links advapi32.lib (needed by freebl's
+          # sysrand.c) when static_libs=1, which we don't set. LINK is
+          # prepended to every link.exe invocation. See bugzilla.mozilla.org
+          # 1551129.
+          export LINK=advapi32.lib
         else
           cp "$nspr_lib_dir"/lib{nspr4,plc4,plds4}.* "$repo/dist/Debug/lib/"
         fi
