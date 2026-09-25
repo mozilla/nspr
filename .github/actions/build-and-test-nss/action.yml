@@ -111,15 +111,7 @@ runs:
           printf '127.0.0.1 %s.%s %s\n' "$HOST" "$DOMSUF" "$HOST" | sudo tee -a /etc/hosts >/dev/null
         fi
 
-        # A pty keeps NSS's own test-progress echoes line-buffered instead of
-        # withheld until exit (util-linux vs BSD script take different flags).
-        if [ "$RUNNER_OS" = Windows ]; then
-          ./all.sh 2>&1 | tee all.log
-        elif [ "$RUNNER_OS" = macOS ]; then
-          script -q /dev/null ./all.sh 2>&1 | tee all.log
-        else
-          script -qec "./all.sh" /dev/null 2>&1 | tee all.log
-        fi
+        ./all.sh 2>&1 | tee all.log
 
         # all.sh can exit 0 having run nothing (e.g. missing POSIX tools
         # leave init.sh unable to create results files), so check its
