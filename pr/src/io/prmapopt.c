@@ -32,7 +32,7 @@
 
 #include "primpl.h"
 
-#if defined(LINUX) || defined(ANDROID)
+#if defined(LINUX) || defined(ANDROID) || defined(REDOX)
 #include <netinet/in.h>
 #endif
 
@@ -163,7 +163,7 @@ _PR_SocketGetSocketOption(PRFileDesc* fd,
             }
             case PR_SockOpt_DontFrag: {
 #if !defined(WIN32) && !defined(DARWIN) && !defined(LINUX) && \
-    !defined(ANDROID)
+    !defined(ANDROID) && !defined(REDOX)
                 PR_SetError(PR_OPERATION_NOT_SUPPORTED_ERROR, 0);
                 rv = PR_FAILURE;
 #else
@@ -174,7 +174,7 @@ _PR_SocketGetSocketOption(PRFileDesc* fd,
 #endif
                 length = sizeof(value);
                 rv = _PR_MD_GETSOCKOPT(fd, level, name, (char*)&value, &length);
-#if defined(WIN32) || defined(DARWIN)
+#if defined(WIN32) || defined(DARWIN) || defined(REDOX)
                 data->value.dont_fragment = value;
 #else
                 data->value.dont_fragment = (value == IP_PMTUDISC_DO) ? 1 : 0;
@@ -419,7 +419,7 @@ _PR_SocketSetSocketOption(PRFileDesc* fd,
 #define IP_DONTFRAGMENT _PR_NO_SUCH_SOCKOPT
 #endif
 
-#elif defined(LINUX) || defined(ANDROID)
+#elif defined(LINUX) || defined(ANDROID) || defined(REDOX)
 #ifndef IP_MTU_DISCOVER
 #define IP_MTU_DISCOVER _PR_NO_SUCH_SOCKOPT
 #endif
@@ -470,7 +470,7 @@ _PR_MapOptionName(PRSockOption optname, PRInt32* level,
         SO_REUSEPORT,
 #if defined(WIN32)
         IP_DONTFRAGMENT,
-#elif defined(LINUX) || defined(ANDROID)
+#elif defined(LINUX) || defined(ANDROID) || defined(REDOX)
         IP_MTU_DISCOVER,
 #elif defined(DARWIN)
         IP_DONTFRAG,

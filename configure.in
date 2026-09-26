@@ -1756,6 +1756,20 @@ tools are selected during the Xcode/Developer Tools installation.])
     PR_MD_CSRCS=qnx.c
     ;;
 
+*-redox*)
+    AC_DEFINE(XP_UNIX)
+    AC_DEFINE(REDOX)
+    AC_DEFINE(_PR_NEED_H_ERRNO)
+    USE_NSPR_THREADS=1
+    MDCPUCFG_H=_redox.cfg
+    PR_MD_CSRCS=redox.c
+    case "${target_cpu}" in
+    x86_64)
+        PR_MD_ASFILES=os_Redox_x86_64.s
+        ;;
+    esac
+    ;;
+
 *-riscos*)
     AC_DEFINE(XP_UNIX)
     AC_DEFINE(RISCOS)
@@ -2041,7 +2055,7 @@ fi
 esac
 
 case "$target_os" in
-darwin*)
+darwin*|redox*)
     _HAVE_PTHREADS=1
     ;;
 *)
@@ -2257,6 +2271,11 @@ case "$target" in
     USE_USER_PTHREADS=
     ;;
 *-netbsd*|*-openbsd*)
+    if test -n "$USE_NSPR_THREADS"; then
+        AC_DEFINE(_PR_LOCAL_THREADS_ONLY)
+    fi
+    ;;
+*-redox*)
     if test -n "$USE_NSPR_THREADS"; then
         AC_DEFINE(_PR_LOCAL_THREADS_ONLY)
     fi
