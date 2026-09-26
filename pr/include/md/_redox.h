@@ -16,12 +16,6 @@
 #define _PR_SI_SYSNAME  "REDOX"
 #if defined(__x86_64__)
 #define _PR_SI_ARCHITECTURE "x86-64"
-#elif defined(__i686__)
-#define _PR_SI_ARCHITECTURE "x86"
-#elif defined(__aarch64__)
-#define _PR_SI_ARCHITECTURE "aarch64"
-#elif defined(__riscv) && (__riscv_xlen == 64)
-#define _PR_SI_ARCHITECTURE "riscv64"
 #else
 #error "Unknown CPU architecture"
 #endif
@@ -44,19 +38,6 @@
 #define HAVE_DLL
 #define USE_DLFCN
 
-#if defined(__i686__)
-#define _PR_HAVE_ATOMIC_OPS
-#define _MD_INIT_ATOMIC()
-extern PRInt32 _PR_x86_AtomicIncrement(PRInt32 *val);
-#define _MD_ATOMIC_INCREMENT          _PR_x86_AtomicIncrement
-extern PRInt32 _PR_x86_AtomicDecrement(PRInt32 *val);
-#define _MD_ATOMIC_DECREMENT          _PR_x86_AtomicDecrement
-extern PRInt32 _PR_x86_AtomicAdd(PRInt32 *ptr, PRInt32 val);
-#define _MD_ATOMIC_ADD                _PR_x86_AtomicAdd
-extern PRInt32 _PR_x86_AtomicSet(PRInt32 *val, PRInt32 newval);
-#define _MD_ATOMIC_SET                _PR_x86_AtomicSet
-#endif
-
 #if defined(__x86_64__)
 #define _PR_HAVE_ATOMIC_OPS
 #define _MD_INIT_ATOMIC()
@@ -70,20 +51,6 @@ extern PRInt32 _PR_x86_64_AtomicSet(PRInt32 *val, PRInt32 newval);
 #define _MD_ATOMIC_SET                _PR_x86_64_AtomicSet
 #endif
 
-
-#if defined(__arm__) || defined(__aarch64__)
-#if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
-/* Use GCC built-in functions */
-#define _PR_HAVE_ATOMIC_OPS
-#define _MD_INIT_ATOMIC()
-
-#define _MD_ATOMIC_INCREMENT(ptr) __sync_add_and_fetch(ptr, 1)
-#define _MD_ATOMIC_DECREMENT(ptr) __sync_sub_and_fetch(ptr, 1)
-#define _MD_ATOMIC_SET(ptr, nv) __sync_lock_test_and_set(ptr, nv)
-#define _MD_ATOMIC_ADD(ptr, i) __sync_add_and_fetch(ptr, i)
-#endif
-#endif /* __arm__ */
-
 #define USE_SETJMP
 #define _PR_POLL_AVAILABLE
 #undef _PR_USE_POLL
@@ -91,11 +58,8 @@ extern PRInt32 _PR_x86_64_AtomicSet(PRInt32 *val, PRInt32 newval);
 #define _PR_NO_LARGE_FILES
 #define _PR_INET6
 #define _PR_HAVE_INET_NTOP
-#define _PR_HAVE_GETHOSTBYNAME2
 #define _PR_HAVE_GETADDRINFO
 #define _PR_INET6_PROBE
-
-#define gethostbyname2(name, af) gethostbyname(name)
 
 #ifdef _PR_PTHREADS
 
@@ -109,34 +73,6 @@ extern void _MD_CleanupBeforeExit(void);
 #define PR_CONTEXT_TYPE sigjmp_buf
 
 #define CONTEXT(_th) ((_th)->md.context)
-
-#if defined(__i686__)
-/* Intel based Redox */
-#define _MD_GET_SP(_t) (_t)->md.context[0].__jmpbuf[JB_SP]
-#define _MD_SET_FP(_t, val) ((_t)->md.context[0].__jmpbuf[JB_BP] = val)
-#define _MD_GET_SP_PTR(_t) &(_MD_GET_SP(_t))
-#define _MD_GET_FP_PTR(_t) (&(_t)->md.context[0].__jmpbuf[JB_BP])
-#define _MD_SP_TYPE int
-
-#elif defined(__arm__)
-/* ARM/Redox */
-#ifdef __ARM_EABI__
-/* EABI */
-#define _MD_GET_SP(_t) (_t)->md.context[0].__jmpbuf[8]
-#define _MD_SET_FP(_t, val) ((_t)->md.context[0].__jmpbuf[7] = (val))
-#define _MD_GET_SP_PTR(_t) &(_MD_GET_SP(_t))
-#define _MD_GET_FP_PTR(_t) (&(_t)->md.context[0].__jmpbuf[7])
-#define _MD_SP_TYPE __ptr_t
-#else /* __ARM_EABI__ */
-/* old ABI */
-#define _MD_GET_SP(_t) (_t)->md.context[0].__jmpbuf[20]
-#define _MD_SET_FP(_t, val) ((_t)->md.context[0].__jmpbuf[19] = (val))
-#define _MD_GET_SP_PTR(_t) &(_MD_GET_SP(_t))
-#define _MD_GET_FP_PTR(_t) (&(_t)->md.context[0].__jmpbuf[19])
-#define _MD_SP_TYPE __ptr_t
-#endif /* __ARM_EABI__ */
-#endif /* __i686__ */
-
 
 #define _MD_SWITCH_CONTEXT(_thread)  \
     if (!sigsetjmp(CONTEXT(_thread), 1)) {  \
@@ -263,18 +199,8 @@ extern void _MD_EarlyInit(void);
 #define _MD_FINAL_INIT                  _PR_UnixInit
 #define _PR_HAVE_CLOCK_MONOTONIC
 
-/*
- * We wrapped the select() call.  _MD_SELECT refers to the built-in,
- * unwrapped version.
- */
-#define _MD_SELECT __select
-
-#ifdef _PR_POLL_AVAILABLE
-#include <sys/poll.h>
-extern int __syscall_poll(struct pollfd *ufds, unsigned long int nfds,
-                          int timeout);
-#define _MD_POLL __syscall_poll
-#endif
+#define _MD_SELECT select
+#define _MD_POLL poll
 
 /* For writev() */
 #include <sys/uio.h>
