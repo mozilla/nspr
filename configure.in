@@ -795,6 +795,7 @@ if test -n "$CROSS_COMPILE"; then
         mingw*)       OS_ARCH=WINNT CPU_ARCH=x86 ;;
         cygwin*)      OS_ARCH=WINNT ;;
         darwin*)      OS_ARCH=Darwin ;;
+        redox*)       OS_ARCH=Redox ;;
         riscos*)      OS_ARCH=RISCOS ;;
     esac
 else
@@ -1756,6 +1757,22 @@ tools are selected during the Xcode/Developer Tools installation.])
     PR_MD_CSRCS=qnx.c
     ;;
 
+*-redox*)
+    AC_DEFINE(XP_UNIX)
+    AC_DEFINE(REDOX)
+    AC_DEFINE(_PR_NEED_H_ERRNO)
+    if test -z "$USE_NSPR_THREADS"; then
+        USE_PTHREADS=1
+    fi
+    MDCPUCFG_H=_redox.cfg
+    PR_MD_CSRCS=redox.c
+    case "${target_cpu}" in
+    x86_64)
+        PR_MD_ASFILES=os_Redox_x86_64.s
+        ;;
+    esac
+    ;;
+
 *-riscos*)
     AC_DEFINE(XP_UNIX)
     AC_DEFINE(RISCOS)
@@ -2041,7 +2058,7 @@ fi
 esac
 
 case "$target_os" in
-darwin*)
+darwin*|redox*)
     _HAVE_PTHREADS=1
     ;;
 *)
@@ -2121,8 +2138,8 @@ if test -n "$USE_PTHREADS"; then
 	if test -z "`egrep -i '(unrecognize|unknown)' conftest.out | grep pthread`" && test -z "`egrep -i '(error|incorrect)' conftest.out`" ; then
 	    ac_cv_have_dash_pthread=yes
 		case "$target_os" in
-	    freebsd*)
-# Freebsd doesn't use -pthread for compiles, it uses them for linking
+	    freebsd*|redox*)
+# Freebsd and redox doesn't use -pthread for compiles, it uses them for linking
             ;;
 	    *)
             CFLAGS="$CFLAGS -pthread"
@@ -2257,6 +2274,11 @@ case "$target" in
     USE_USER_PTHREADS=
     ;;
 *-netbsd*|*-openbsd*)
+    if test -n "$USE_NSPR_THREADS"; then
+        AC_DEFINE(_PR_LOCAL_THREADS_ONLY)
+    fi
+    ;;
+*-redox*)
     if test -n "$USE_NSPR_THREADS"; then
         AC_DEFINE(_PR_LOCAL_THREADS_ONLY)
     fi
