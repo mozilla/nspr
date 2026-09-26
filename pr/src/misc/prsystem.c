@@ -243,7 +243,7 @@ PR_GetPhysicalMemorySize(void)
 {
     PRUint64 bytes = 0;
 
-#if defined(LINUX) || defined(SOLARIS)
+#if defined(LINUX) || defined(REDOX) || defined(SOLARIS)
 
     long pageSize = sysconf(_SC_PAGESIZE);
     long pageCount = sysconf(_SC_PHYS_PAGES);

@@ -289,7 +289,7 @@ LIBPTHREAD = -lpthread
 ifeq ($(OS_ARCH),AIX)
 LIBPTHREAD = -lpthreads
 endif
-ifeq (,$(filter-out FreeBSD OpenBSD BSD_OS QNX Darwin OpenUNIX,$(OS_ARCH)))
+ifeq (,$(filter-out FreeBSD OpenBSD BSD_OS QNX Darwin OpenUNIX Redox,$(OS_ARCH)))
 LIBPTHREAD =
 endif
 endif
