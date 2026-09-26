@@ -832,6 +832,14 @@ _MD_hpux_map_sendfile_error(int err)
 }
 #endif /* HPUX11 */
 
+#ifdef REDOX
+void
+_MD_redox_map_sendfile_error(int err)
+{
+    _MD_unix_map_default_error(err);
+}
+#endif /* REDOX */
+
 #ifdef SOLARIS
 void
 _MD_solaris_map_sendfile_error(int err)
