@@ -144,6 +144,10 @@ ifeq ($(OS_TARGET),Android)
 OS_LIBS		+= -llog
 endif
 
+ifeq ($(OS_TARGET),redox)
+OS_LIBS		=
+endif
+
 EXTRA_LIBS += $(OS_LIBS)
 
 #
