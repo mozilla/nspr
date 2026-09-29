@@ -1766,6 +1766,9 @@ tools are selected during the Xcode/Developer Tools installation.])
     fi
     MDCPUCFG_H=_redox.cfg
     PR_MD_CSRCS=redox.c
+    DSO_CFLAGS=-fPIC
+    DSO_LDOPTS='-shared -Wl,-soname -Wl,$(notdir $@)'
+    MKSHLIB='$(CC) $(DSO_LDOPTS) -o $@'
     case "${target_cpu}" in
     x86_64)
         PR_MD_ASFILES=os_Redox_x86_64.s
