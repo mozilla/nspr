@@ -3,10 +3,11 @@
 #
 # Extra configure arguments are taken as positional arguments. Callers may set
 # CC, CFLAGS, CXXFLAGS and LDFLAGS, and:
-#   MAKE             GNU make; the BSDs and Solaris ship theirs as gmake
-#   NSPR_COVERAGE    1 to instrument for coverage
-#   NSPR_32BIT       1 to build 32-bit, omitting --enable-64bit
-#   NSPR_SKIP_TESTS  1 to build without building or running the tests
+#   MAKE                 GNU make; the BSDs and Solaris ship theirs as gmake
+#   NSPR_COVERAGE        1 to instrument for coverage
+#   NSPR_32BIT           1 to build 32-bit, omitting --enable-64bit
+#   NSPR_SKIP_TESTS      1 to build without building or running the tests
+#   NSPR_SKIP_RUN_TESTS  1 to build the tests but not run them
 
 set -e
 
@@ -47,6 +48,8 @@ if [ "${NSPR_SKIP_TESTS:-}" != 1 ]; then
     # Word splitting of $test_make_args is intended.
     # shellcheck disable=SC2086
     "$MAKE" -C pr/tests ${test_make_args:-}
-    cd pr/tests
-    "$srcdir/pr/tests/runtests.sh" ../../dist
+    if [ "${NSPR_SKIP_RUN_TESTS:-}" != 1 ]; then
+        cd pr/tests
+        "$srcdir/pr/tests/runtests.sh" ../../dist
+    fi
 fi
