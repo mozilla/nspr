@@ -54,6 +54,9 @@ PR_BEGIN_EXTERN_C
 #elif defined(NTO)
 #include "md/_nto.h"
 
+#elif defined(REDOX)
+#include "md/_redox.h"
+
 #elif defined(RISCOS)
 #include "md/_riscos.h"
 
