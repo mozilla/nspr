@@ -8738,6 +8738,7 @@ case "$target" in
         printf "%s\n" "#define _PR_LOCAL_THREADS_ONLY 1" >>confdefs.h
 
     fi
+    OS_LIBS="$OS_LIBS -lrt" # match pr/src/Makefile.in's OS_LIBS
     ;;
 *-mingw*|*-msys*|*-cygwin*|*-mks*)
         USE_PTHREADS=

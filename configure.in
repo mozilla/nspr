@@ -2249,6 +2249,7 @@ case "$target" in
     if test -n "$USE_NSPR_THREADS"; then
         AC_DEFINE(_PR_LOCAL_THREADS_ONLY)
     fi
+    OS_LIBS="$OS_LIBS -lrt" # match pr/src/Makefile.in's OS_LIBS
     ;;
 *-mingw*|*-msys*|*-cygwin*|*-mks*)
     dnl win32 cannot use pthreads
