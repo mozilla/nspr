@@ -36,6 +36,24 @@ pt_pthread_mutex_is_locked(pthread_mutex_t* m)
 }
 #endif
 
+/*
+ * lock->owner and mon->owner may be zero-initialized and never assigned a
+ * valid thread ID (e.g. a lock/monitor that has never been held), so we
+ * can't use pthread_equal(), which POSIX only allows on valid thread IDs.
+ * Fall back to a raw comparison only when one side may be that sentinel;
+ * pthread_t is otherwise opaque, so real thread IDs still go through
+ * pthread_equal().
+ */
+int
+pt_pthread_equal(pthread_t t1, pthread_t t2)
+{
+    if (_PT_PTHREAD_THR_HANDLE_IS_INVALID(t1) ||
+        _PT_PTHREAD_THR_HANDLE_IS_INVALID(t2)) {
+        return t1 == t2;
+    }
+    return pthread_equal(t1, t2);
+}
+
 /**************************************************************/
 /**************************************************************/
 /*****************************LOCKS****************************/
@@ -193,9 +211,9 @@ PR_Unlock(PRLock* lock)
     PR_ASSERT(lock != NULL);
     PR_ASSERT(_PT_PTHREAD_MUTEX_IS_LOCKED(lock->mutex));
     PR_ASSERT(PR_TRUE == lock->locked);
-    PR_ASSERT(pthread_equal(lock->owner, self));
+    PR_ASSERT(pt_pthread_equal(lock->owner, self));
 
-    if (!lock->locked || !pthread_equal(lock->owner, self)) {
+    if (!lock->locked || !pt_pthread_equal(lock->owner, self)) {
         return PR_FAILURE;
     }
 
@@ -221,7 +239,7 @@ PR_AssertCurrentThreadOwnsLock(PRLock* lock)
      * to the correctness of PR_AssertCurrentThreadOwnsLock(), but
      * this particular order makes the assertion more likely to
      * catch errors. */
-    PR_ASSERT(lock->locked && pthread_equal(lock->owner, pthread_self()));
+    PR_ASSERT(lock->locked && pt_pthread_equal(lock->owner, pthread_self()));
 }
 
 /**************************************************************/
@@ -278,7 +296,7 @@ pt_PostNotifyToCvar(PRCondVar* cvar, PRBool broadcast)
     _PT_Notified* notified = &cvar->lock->notified;
 
     PR_ASSERT(PR_TRUE == cvar->lock->locked);
-    PR_ASSERT(pthread_equal(cvar->lock->owner, pthread_self()));
+    PR_ASSERT(pt_pthread_equal(cvar->lock->owner, pthread_self()));
     PR_ASSERT(_PT_PTHREAD_MUTEX_IS_LOCKED(cvar->lock->mutex));
 
     while (1) {
@@ -360,7 +378,7 @@ PR_WaitCondVar(PRCondVar* cvar, PRIntervalTime timeout)
     PR_ASSERT(_PT_PTHREAD_MUTEX_IS_LOCKED(cvar->lock->mutex));
     PR_ASSERT(PR_TRUE == cvar->lock->locked);
     /* and it better be by us */
-    PR_ASSERT(pthread_equal(cvar->lock->owner, pthread_self()));
+    PR_ASSERT(pt_pthread_equal(cvar->lock->owner, pthread_self()));
 
     if (_PT_THREAD_INTERRUPTED(thred)) {
         goto aborted;
@@ -575,7 +593,7 @@ PR_GetMonitorEntryCount(PRMonitor* mon)
 
     rv = pthread_mutex_lock(&mon->lock);
     PR_ASSERT(0 == rv);
-    if (pthread_equal(mon->owner, self)) {
+    if (pt_pthread_equal(mon->owner, self)) {
         count = mon->entryCount;
     }
     rv = pthread_mutex_unlock(&mon->lock);
@@ -591,7 +609,7 @@ PR_AssertCurrentThreadInMonitor(PRMonitor* mon)
 
     rv = pthread_mutex_lock(&mon->lock);
     PR_ASSERT(0 == rv);
-    PR_ASSERT(mon->entryCount != 0 && pthread_equal(mon->owner, pthread_self()));
+    PR_ASSERT(mon->entryCount != 0 && pt_pthread_equal(mon->owner, pthread_self()));
     rv = pthread_mutex_unlock(&mon->lock);
     PR_ASSERT(0 == rv);
 #endif
@@ -607,7 +625,7 @@ PR_EnterMonitor(PRMonitor* mon)
     rv = pthread_mutex_lock(&mon->lock);
     PR_ASSERT(0 == rv);
     if (mon->entryCount != 0) {
-        if (pthread_equal(mon->owner, self)) {
+        if (pt_pthread_equal(mon->owner, self)) {
             goto done;
         }
         while (mon->entryCount != 0) {
@@ -639,8 +657,8 @@ PR_ExitMonitor(PRMonitor* mon)
     PR_ASSERT(0 == rv);
     /* the entries should be > 0 and we'd better be the owner */
     PR_ASSERT(mon->entryCount > 0);
-    PR_ASSERT(pthread_equal(mon->owner, self));
-    if (mon->entryCount == 0 || !pthread_equal(mon->owner, self)) {
+    PR_ASSERT(pt_pthread_equal(mon->owner, self));
+    if (mon->entryCount == 0 || !pt_pthread_equal(mon->owner, self)) {
         rv = pthread_mutex_unlock(&mon->lock);
         PR_ASSERT(0 == rv);
         return PR_FAILURE;
@@ -686,7 +704,7 @@ PR_Wait(PRMonitor* mon, PRIntervalTime timeout)
     /* the entries better be positive */
     PR_ASSERT(mon->entryCount > 0);
     /* and it better be owned by us */
-    PR_ASSERT(pthread_equal(mon->owner, pthread_self()));
+    PR_ASSERT(pt_pthread_equal(mon->owner, pthread_self()));
 
     /* tuck these away 'till later */
     saved_entries = mon->entryCount;
