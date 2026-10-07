@@ -31,6 +31,7 @@
 #define _PR_NO_LARGE_FILES
 #define _PR_STAT_HAS_ONLY_ST_ATIME
 #define PR_HAVE_POSIX_NAMED_SHARED_MEMORY
+#define _PR_HAVE_POSIX_SEMAPHORES
 
 #undef FD_SETSIZE
 #define FD_SETSIZE 4096
@@ -102,6 +103,10 @@ struct _MDThreadStack {
 };
 
 struct _MDLock {
+    PRInt8 notused;
+};
+
+struct _MDSemaphore {
     PRInt8 notused;
 };
 

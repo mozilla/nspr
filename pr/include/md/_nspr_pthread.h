@@ -92,6 +92,10 @@ struct _MDLock {
     pthread_mutex_t mutex;
 };
 
+struct _MDSemaphore {
+    PRInt8 notused;
+};
+
 struct _MDCVar {
     pthread_mutex_t mutex;
 };

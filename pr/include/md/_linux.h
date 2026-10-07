@@ -352,6 +352,7 @@ _MD_ATOMIC_SET(PRInt32* ptr, PRInt32 nv)
 #define _PR_INET6_PROBE
 #endif
 #ifndef ANDROID
+#define _PR_HAVE_SYSV_SEMAPHORES
 #define PR_HAVE_SYSV_NAMED_SHARED_MEMORY
 #endif
 /* Android has gethostbyname_r but not gethostbyaddr_r or gethostbyname2_r. */
@@ -625,6 +626,10 @@ struct _MDThreadStack {
 };
 
 struct _MDLock {
+    PRInt8 notused;
+};
+
+struct _MDSemaphore {
     PRInt8 notused;
 };
 

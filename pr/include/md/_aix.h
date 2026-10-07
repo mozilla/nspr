@@ -48,6 +48,7 @@
 #define _PR_HAVE_GETADDRINFO
 #endif
 #endif
+#define _PR_HAVE_SYSV_SEMAPHORES
 #define PR_HAVE_SYSV_NAMED_SHARED_MEMORY
 #define _PR_ACCEPT_INHERIT_NONBLOCK
 
@@ -139,6 +140,10 @@ struct _MDThreadStack {
 };
 
 struct _MDLock {
+    PRInt8 notused;
+};
+
+struct _MDSemaphore {
     PRInt8 notused;
 };
 

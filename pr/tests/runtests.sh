@@ -47,12 +47,16 @@ fi
 #dbmalloc	- obsolete; originally for testing debug version of nspr's malloc
 #dbmalloc1	- obsolete; originally for testing debug version of nspr's malloc
 #depend		- obsolete; used to test a initial spec for library dependencies
+#dceemu		- used to tests special functions in NSPR for DCE emulation
 #ipv6		- IPV6 not in use by NSPR clients
 #mbcs       - tests use of multi-byte charset for filenames. See BugZilla #25140
 #io_timeoutk - obsolete; subsumed in io_timeout
 #io_timeoutu - obsolete; subsumed in io_timeout
 #prftest1	- obsolete; subsumed by prftest
 #prftest2	- obsolete; subsumed by prftest
+#prselect	- obsolete; PR_Select is obsolete
+#select2	- obsolete; PR_Select is obsolete
+#sem		- obsolete; PRSemaphore is obsolete
 #suspend	- private interfaces PR_SuspendAll, PR_ResumeAll, etc..
 #thruput	- needs to be run manually as client/server
 #time		- used to measure time with native calls and nspr calls
@@ -65,6 +69,7 @@ fi
 #
 
 #forktest (failed on IRIX)
+#multiwait - fails on Linux 64bit since NSPR v 4.4 from 2004.
 #nbconn - fails on some platforms
 #poll_er - fails on some platforms? limited use?
 #prpoll -  the bad-FD test needs to be moved to a different test
@@ -103,6 +108,7 @@ accept
 acceptread
 acceptreademu
 affinity
+alarm
 anonfm
 atomic
 attach
@@ -115,12 +121,14 @@ dtoa
 errcodes
 exit
 fdcach
+fileio
 foreign
 formattm
 fsync
 i2l
 initclk
 inrval
+instrumt
 intrio
 intrupt
 io_timeout
@@ -150,6 +158,7 @@ pipeping2
 pipeself
 poll_nm
 poll_to
+pollable
 prefloop
 prftest
 prfz
@@ -160,7 +169,13 @@ randseed
 reinit
 rwlocktest
 sel_spd
+selct_er
+selct_nm
+selct_to
 selintr
+sema
+semaerr
+semaping
 sendzlf
 server_test
 servr_kk
