@@ -313,7 +313,7 @@ ifdef MOZ_PROFILE_USE
 	python $(topsrcdir)/build/win32/pgomerge.py \
 		$(notdir $(SHARED_LIBRARY:.$(DLL_SUFFIX)=)) $(DIST)/bin
 endif	# MOZ_PROFILE_USE
-	$(LINK_DLL) -MAP $(DLLBASE) $(DLL_LIBS) $(EXTRA_LIBS) $(OBJS) $(RES)
+	$(LINK_DLL) -MAP $(DLLBASE) $(DLL_LIBS) $(EXTRA_LIBS) $(OBJS) $(RES) $(LDFLAGS)
 ifdef MT
 	@if test -f $@.manifest; then \
 		$(MT) -NOLOGO -MANIFEST $@.manifest -OUTPUTRESOURCE:$@\;2; \
