@@ -43,6 +43,7 @@
 
 static PRIntn pt_schedpriv = 0;
 extern PRLock* _pr_sleeplock;
+extern int pt_pthread_equal(pthread_t t1, pthread_t t2);
 
 static struct _PT_Bookeeping {
     PRLock* ml;             /* a lock to protect ourselves */
@@ -170,7 +171,7 @@ _pt_root(void* arg)
         thred->id = id;
         thred->idSet = PR_TRUE;
     } else {
-        PR_ASSERT(pthread_equal(thred->id, id));
+        PR_ASSERT(pt_pthread_equal(thred->id, id));
     }
 
 #ifdef _PR_NICE_PRIORITY_SCHEDULING
@@ -478,7 +479,7 @@ _PR_CreateThread(PRThreadType type, void (*start)(void* arg),
             thred->id = id;
             thred->idSet = PR_TRUE;
         } else {
-            PR_ASSERT(pthread_equal(thred->id, id));
+            PR_ASSERT(pt_pthread_equal(thred->id, id));
         }
 
         /*
