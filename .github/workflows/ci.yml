@@ -175,6 +175,24 @@ jobs:
           flags: ubuntu-latest-gcc-x86
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
+  redox:
+    name: redox
+    runs-on: ubuntu-latest
+    container: redoxos/redoxer
+    steps:
+      - run: ln -sf /root/.redoxer ~/.redoxer
+      - run: echo "$HOME/.redoxer/$TARGET/toolchain/bin" >> "$GITHUB_PATH"
+        env:
+          TARGET: x86_64-unknown-redox
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/build-and-test
+        with:
+          cc: x86_64-unknown-redox-gcc
+          tests: "false"
+          configure-args: --target=x86_64-unknown-redox
+
   vm:
     name: ${{ matrix.platform }}
     runs-on: ubuntu-latest
