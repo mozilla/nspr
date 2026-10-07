@@ -27,5 +27,5 @@ CSRCS	+= $(PR_MD_CSRCS)
 ASFILES += $(PR_MD_ASFILES)
 
 OBJS += $(addprefix md/unix/$(OBJDIR)/,$(CSRCS:.c=.$(OBJ_SUFFIX)))  \
-	$(addprefix md/unix/$(OBJDIR)/,$(ASFILES:.s=.$(OBJ_SUFFIX)))
+	$(addprefix md/unix/$(OBJDIR)/,$(ASFILES:.${ASM_SUFFIX}=.$(OBJ_SUFFIX)))
 

@@ -3,6 +3,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// Include section to mark as compatible with Intel CET if enabled.
+#if defined(__has_include)
+#if __has_include(<cet.h>)
+#include <cet.h>
+#endif
+#endif
+
+#ifndef _CET_ENDBR
+#define _CET_ENDBR
+#endif
+
 // PRInt32 _PR_x86_64_AtomicIncrement(PRInt32 *val)
 //
 // Atomically increment the integer pointed to by 'val' and return
@@ -13,6 +24,7 @@
     .type _PR_x86_64_AtomicIncrement, @function
     .align 4
 _PR_x86_64_AtomicIncrement:
+    _CET_ENDBR
     movl $1, %eax
     lock
     xaddl %eax, (%rdi)
@@ -30,6 +42,7 @@ _PR_x86_64_AtomicIncrement:
     .type _PR_x86_64_AtomicDecrement, @function
     .align 4
 _PR_x86_64_AtomicDecrement:
+    _CET_ENDBR
     movl $-1, %eax
     lock
     xaddl %eax, (%rdi)
@@ -47,6 +60,7 @@ _PR_x86_64_AtomicDecrement:
     .type _PR_x86_64_AtomicSet, @function
     .align 4
 _PR_x86_64_AtomicSet:
+    _CET_ENDBR
     movl %esi, %eax
     xchgl %eax, (%rdi)
     ret
@@ -62,6 +76,7 @@ _PR_x86_64_AtomicSet:
     .type _PR_x86_64_AtomicAdd, @function
     .align 4
 _PR_x86_64_AtomicAdd:
+    _CET_ENDBR
     movl %esi, %eax
     lock
     xaddl %eax, (%rdi)
