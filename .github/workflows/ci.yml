@@ -216,6 +216,24 @@ jobs:
             test -e "target/dist/lib/lib$lib.a" || { echo "::error::lib$lib.a was not built"; exit 1; }
           done
 
+  redox:
+    name: redox
+    runs-on: ubuntu-latest
+    container: redoxos/redoxer@sha256:977276f5524752a83e00c4a7a3a27b6a6f2df6d66cb201adfa36067d0d0c7464 # latest
+    steps:
+      - run: ln -sf /root/.redoxer ~/.redoxer
+      - run: echo "$HOME/.redoxer/$TARGET/toolchain/bin" >> "$GITHUB_PATH"
+        env:
+          TARGET: x86_64-unknown-redox
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/build-and-test
+        with:
+          cc: x86_64-unknown-redox-gcc
+          tests: "false"
+          configure-args: --target=x86_64-unknown-redox
+
   vm:
     name: ${{ matrix.platform }}
     runs-on: ubuntu-latest
