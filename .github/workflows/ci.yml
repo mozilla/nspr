@@ -175,6 +175,47 @@ jobs:
           flags: ubuntu-latest-gcc-x86
           token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env] A dedicated environment buys nothing for an upload-only token.
 
+  # Build only: running the tests would need an emulator.
+  android:
+    name: android (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - aarch64-linux-android
+          - armv7a-linux-androideabi
+          - x86_64-linux-android
+          - i686-linux-android
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The runner image's newest NDK; its clang wrappers set the target and sysroot.
+      # Build for the oldest API level it supports, which also hides newer libc APIs.
+      - name: Configure and build
+        env:
+          TARGET: ${{ matrix.target }}
+          NSPR_SKIP_TESTS: 1
+        run: |
+          api=$(jq .min "$ANDROID_NDK_LATEST_HOME/meta/platforms.json")
+          bin="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC="$bin/${TARGET}${api}-clang" CXX="$bin/${TARGET}${api}-clang++"
+          # configure would otherwise settle for echo, and build no static libraries.
+          export AR="$bin/llvm-ar" RANLIB="$bin/llvm-ranlib" STRIP="$bin/llvm-strip"
+          case $TARGET in
+          *64-*) ;;
+          *) export NSPR_32BIT=1 ;;
+          esac
+          # Without --host, configure takes the build machine to be the target and,
+          # for x86 targets, fails trying to run what it compiles.
+          .github/scripts/build-and-test.sh --host=x86_64-pc-linux-gnu --target="$TARGET"
+          # A missing archive leaves a dangling symlink in dist, which test -e rejects.
+          for lib in nspr4 plc4 plds4; do
+            test -e "target/dist/lib/lib$lib.a" || { echo "::error::lib$lib.a was not built"; exit 1; }
+          done
+
   vm:
     name: ${{ matrix.platform }}
     runs-on: ubuntu-latest
