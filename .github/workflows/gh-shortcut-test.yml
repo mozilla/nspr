@@ -1,0 +1,45 @@
+name: gh shortcut test
+
+# Throwaway: checks how gh pr comment --edit-last and gh pr edit labels behave with GITHUB_TOKEN.
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  test:
+    if: github.head_ref == 'gh-shortcut-test'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - name: gh pr comment --edit-last --create-if-none
+        continue-on-error: true
+        run: |
+          gh --version
+          bot_comments() {
+            gh api --paginate "repos/$GH_REPO/issues/$PR/comments" \
+              --jq '.[] | select(.user.login == "github-actions[bot]") | "\(.id) \(.body)"'
+          }
+          echo "Before:"; bot_comments
+          gh pr comment "$PR" --edit-last --create-if-none --body "edit-last test 1"
+          echo "After first run:"; bot_comments
+          gh pr comment "$PR" --edit-last --create-if-none --body "edit-last test 2"
+          echo "After second run:"; bot_comments
+
+      - name: gh pr edit --remove-label for a label the PR lacks
+        continue-on-error: true
+        run: |
+          gh label create "nspr4: backportable" --color 0e8a16 --force
+          gh label create "nspr4: needs review" --color fbca04 --force
+          echo "Labels before: $(gh pr view "$PR" --json labels --jq '[.labels[].name] | join(", ")')"
+          rc=0
+          gh pr edit "$PR" --add-label "nspr4: backportable" --remove-label "nspr4: needs review" || rc=$?
+          echo "gh pr edit exit status: $rc"
+          echo "Labels after: $(gh pr view "$PR" --json labels --jq '[.labels[].name] | join(", ")')"
