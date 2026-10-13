@@ -421,7 +421,7 @@ jobs:
           ARCH: ${{ matrix.arch }}
           CC: cl
           NSPR_32BIT: ${{ matrix.arch == 'x86' && '1' || '' }}
-          NSPR_SKIP_RUN_TESTS: 1
+          NSPR_SKIP_TESTS: 1
         run: |
           # MSYS2's coreutils "link" shadows MSVC's linker, which configure uses as LD.
           rm -f /usr/bin/link.exe
