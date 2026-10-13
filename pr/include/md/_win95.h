@@ -184,6 +184,10 @@ struct _MDLock {
 #endif
 };
 
+struct _MDSemaphore {
+    HANDLE sem;
+};
+
 struct _MDFileDesc {
     PROsfd osfd; /* The osfd can come from one of three spaces:
                   * - For stdin, stdout, and stderr, we are using
@@ -524,5 +528,13 @@ extern PRStatus _MD_CloseFileMap(struct PRFileMap* fmap);
 
 extern PRStatus _MD_SyncMemMap(PRFileDesc* fd, void* addr, PRUint32 len);
 #define _MD_SYNC_MEM_MAP _MD_SyncMemMap
+
+/* --- Named semaphores stuff --- */
+#define _PR_HAVE_NAMED_SEMAPHORES
+#define _MD_OPEN_SEMAPHORE _PR_MD_OPEN_SEMAPHORE
+#define _MD_WAIT_SEMAPHORE _PR_MD_WAIT_SEMAPHORE
+#define _MD_POST_SEMAPHORE _PR_MD_POST_SEMAPHORE
+#define _MD_CLOSE_SEMAPHORE _PR_MD_CLOSE_SEMAPHORE
+#define _MD_DELETE_SEMAPHORE(name) PR_SUCCESS /* no op */
 
 #endif /* nspr_win32_defs_h___ */

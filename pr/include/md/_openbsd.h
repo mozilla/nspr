@@ -44,6 +44,7 @@
 #define _PR_STAT_HAS_ST_ATIMESPEC
 #define _PR_POLL_AVAILABLE
 #define _PR_USE_POLL
+#define _PR_HAVE_SYSV_SEMAPHORES
 #define PR_HAVE_SYSV_NAMED_SHARED_MEMORY
 
 #define _PR_INET6
@@ -119,6 +120,10 @@ struct _MDThreadStack {
 };
 
 struct _MDLock {
+    PRInt8 notused;
+};
+
+struct _MDSemaphore {
     PRInt8 notused;
 };
 

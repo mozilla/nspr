@@ -28,11 +28,26 @@ _PR_CleanupThread(PRThread* thread)
     /* Free up per-thread-data */
     _PR_DestroyThreadPrivate(thread);
 
+    /* Free any thread dump procs */
+    if (thread->dumpArg) {
+        PR_DELETE(thread->dumpArg);
+    }
+    thread->dump = 0;
+
     PR_DELETE(thread->name);
     PR_DELETE(thread->errorString);
     thread->errorStringSize = 0;
     thread->errorStringLength = 0;
     thread->environment = NULL;
+}
+
+PR_IMPLEMENT(PRStatus)
+PR_Yield()
+{
+    static PRBool warning = PR_TRUE;
+    if (warning)
+        warning = _PR_Obsolete("PR_Yield()", "PR_Sleep(PR_INTERVAL_NO_WAIT)");
+    return (PR_Sleep(PR_INTERVAL_NO_WAIT));
 }
 
 /*
@@ -74,9 +89,9 @@ PR_Sleep(PRIntervalTime timeout)
                 _PR_ADD_RUNQ(me, cpu, pri);
                 _PR_RUNQ_UNLOCK(cpu);
 
-                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Sleep: yielding"));
+                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Yield: yielding"));
                 _PR_MD_SWITCH_CONTEXT(me);
-                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Sleep: done"));
+                PR_LOG(_pr_sched_lm, PR_LOG_MIN, ("PR_Yield: done"));
 
                 _PR_FAST_INTSON(is);
             } else {

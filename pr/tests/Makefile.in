@@ -24,6 +24,7 @@ CSRCS =             \
 	acceptreademu.c	\
 	addrstr.c		\
 	affinity.c		\
+	alarm.c			\
 	anonfm.c		\
 	append.c		\
 	atomic.c		\
@@ -36,6 +37,7 @@ CSRCS =             \
 	concur.c	    \
 	cvar.c			\
 	cvar2.c			\
+	dceemu.c		\
 	dlltest.c		\
 	dtoa.c			\
 	env.c			\
@@ -43,6 +45,7 @@ CSRCS =             \
 	errset.c		\
 	exit.c  		\
 	fdcach.c		\
+	fileio.c		\
 	foreign.c	    \
 	forktest.c	    \
 	formattm.c	    \
@@ -53,6 +56,7 @@ CSRCS =             \
 	i2l.c		    \
 	initclk.c		\
 	inrval.c		\
+	instrumt.c      \
 	intrio.c        \
 	intrupt.c       \
 	io_timeout.c    \
@@ -74,13 +78,16 @@ CSRCS =             \
 	makedir.c		\
 	mbcs.c			\
 	multiacc.c		\
+	multiwait.c		\
 	many_cv.c		\
 	monref.c		\
 	nameshm1.c      \
 	nbconn.c		\
 	nblayer.c		\
+	nonblock.c		\
 	ntioto.c        \
 	ntoh.c			\
+	obsints.c		\
 	op_2long.c      \
 	op_excl.c		\
 	op_filnf.c		\
@@ -100,6 +107,7 @@ CSRCS =             \
 	poll_er.c		\
 	poll_nm.c		\
 	poll_to.c		\
+	pollable.c		\
 	prefloop.c		\
 	prfdbl.c		\
 	prftest.c		\
@@ -119,7 +127,17 @@ CSRCS =             \
 	rwlockrank.c    \
 	rwlocktest.c    \
 	sel_spd.c  		\
+	selct_er.c	    \
+	selct_nm.c	    \
+	selct_to.c	    \
+	select2.c  		\
 	selintr.c  		\
+	sem.c 	  		\
+	sema.c 	  		\
+	semaerr.c 		\
+	semaerr1.c 		\
+	semaping.c 		\
+	semapong.c 		\
 	sendzlf.c 		\
 	server_test.c	\
 	servr_kk.c		\
@@ -143,6 +161,8 @@ CSRCS =             \
 	system.c		\
 	testbit.c    	\
 	testfile.c    	\
+	thrpool_server.c \
+	thrpool_client.c \
 	threads.c 	  	\
 	thruput.c 	  	\
 	timemac.c		\

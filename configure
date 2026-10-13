@@ -8973,6 +8973,7 @@ MAKEFILES="
     pr/Makefile
     pr/include/Makefile
     pr/include/md/Makefile
+    pr/include/obsolete/Makefile
     pr/include/private/Makefile
     pr/src/Makefile
     pr/src/io/Makefile
