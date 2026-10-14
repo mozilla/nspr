@@ -449,6 +449,10 @@ $(OBJDIR)/%.$(OBJ_SUFFIX): %.s
 	@$(MAKE_OBJDIR)
 	$(AS) -o $@ $(ASFLAGS) -c $<
 
+$(OBJDIR)/%.$(OBJ_SUFFIX): %.S
+	@$(MAKE_OBJDIR)
+	$(AS) -o $@ $(ASFLAGS) -c $<
+
 %.i: %.c
 	$(CC) -C -E $(CFLAGS) $< > $*.i
 
