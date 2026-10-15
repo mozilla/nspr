@@ -32,7 +32,7 @@
 
 #include "primpl.h"
 
-#if defined(LINUX) || defined(ANDROID) || defined(REDOX)
+#if defined(LINUX) || defined(ANDROID)
 #include <netinet/in.h>
 #endif
 
@@ -419,7 +419,7 @@ _PR_SocketSetSocketOption(PRFileDesc* fd,
 #define IP_DONTFRAGMENT _PR_NO_SUCH_SOCKOPT
 #endif
 
-#elif defined(LINUX) || defined(ANDROID) || defined(REDOX)
+#elif defined(LINUX) || defined(ANDROID)
 #ifndef IP_MTU_DISCOVER
 #define IP_MTU_DISCOVER _PR_NO_SUCH_SOCKOPT
 #endif
@@ -470,7 +470,7 @@ _PR_MapOptionName(PRSockOption optname, PRInt32* level,
         SO_REUSEPORT,
 #if defined(WIN32)
         IP_DONTFRAGMENT,
-#elif defined(LINUX) || defined(ANDROID) || defined(REDOX)
+#elif defined(LINUX) || defined(ANDROID)
         IP_MTU_DISCOVER,
 #elif defined(DARWIN)
         IP_DONTFRAG,
