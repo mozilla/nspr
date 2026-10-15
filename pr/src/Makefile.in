@@ -40,21 +40,6 @@ endif
 else
 MKSHLIB += -M $(MAPFILE)
 endif
-#
-# In Solaris 2.6 or earlier, -lrt is called -lposix4.
-# 
-LIBRT_TEST=$(firstword $(sort 5.7 $(OS_RELEASE)))
-ifeq (5.7, $(LIBRT_TEST))
-LIBRT=-lrt
-else
-LIBRT=-lposix4
-endif
-
-ifdef USE_PTHREADS
-OS_LIBS			= -lpthread ${LIBRT} -lsocket -lnsl -ldl -lc
-else
-OS_LIBS			= -lsocket -lnsl -ldl -lc
-endif	# USE_PTHREADS
 ifeq ($(CPU_ARCH),sparc)
 ifndef USE_64
 DSO_LDOPTS	+= -Wl,-f,\$$ORIGIN/cpu/\$$ISALIST/lib$(ULTRASPARC_LIBRARY)$(LIBRARY_VERSION).so
@@ -91,24 +76,6 @@ endif
 endif
 endif
 
-# Linux, GNU/Hurd, and GNU/kFreeBSD systems
-ifneq (,$(filter Linux GNU%,$(OS_ARCH)))
-ifeq ($(USE_PTHREADS), 1)
-ifeq ($(OS_TARGET),Android)
-# Android has no libpthread.so in NDK
-OS_LIBS		= -ldl
-else
-OS_LIBS		= -lpthread -ldl
-endif
-else
-OS_LIBS		= -ldl
-endif
-ifneq ($(OS_TARGET),Android)
-# Android has no librt - realtime functions are in libc
-OS_LIBS		+= -lrt
-endif
-endif
-
 ifeq ($(OS_ARCH),HP-UX)
 ifeq ($(USE_PTHREADS), 1)
 OS_LIBS 	= -lpthread -lrt
@@ -128,20 +95,8 @@ endif
 endif
 endif
 
-ifeq ($(OS_ARCH),WINNT)
-ifdef NS_USE_GCC
-OS_LIBS		= -ladvapi32 -lws2_32 -lmswsock -lwinmm
-else
-OS_LIBS		= advapi32.lib ws2_32.lib mswsock.lib winmm.lib
-endif
-endif
-
 ifeq ($(OS_ARCH),WINCE)
 OS_LIBS		= ws2.lib
-endif
-
-ifeq ($(OS_TARGET),Android)
-OS_LIBS		+= -llog
 endif
 
 EXTRA_LIBS += $(OS_LIBS)
