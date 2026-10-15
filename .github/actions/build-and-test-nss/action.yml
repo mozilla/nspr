@@ -40,7 +40,7 @@ runs:
       shell: C:\msys64\usr\bin\bash.exe -leo pipefail {0} # zizmor: ignore[misfeature] NSS needs a POSIX shell.
       run: |
         pacman -Sy --noconfirm
-        pacman -S --needed --noconfirm nsinstall sqlite
+        pacman -S --needed --noconfirm sqlite
 
     - name: Install gyp-next
       if: runner.os != 'Linux'
@@ -62,17 +62,11 @@ runs:
       run: |
         repo=$(pwd -P)
         nspr_lib_dir="$repo/target/dist/lib"
-        nss_nspr_lib_dir="$nspr_lib_dir"
         mkdir -p "$repo/dist/Debug/lib/pkgconfig"
         cp "$repo/target/config/nspr.pc" "$repo/dist/Debug/lib/pkgconfig/"
 
         if [ "$RUNNER_OS" = Windows ]; then
-          nss_nspr_lib_dir="$repo/target/nss-nspr/lib"
-          mkdir -p "$nss_nspr_lib_dir"
-          for lib in nspr4 plc4 plds4; do
-            cp "$nspr_lib_dir/$lib.lib" "$nss_nspr_lib_dir/$lib.lib"
-            cp "$nspr_lib_dir/$lib.dll" "$repo/dist/Debug/lib/"
-          done
+          cp "$nspr_lib_dir"/{nspr4,plc4,plds4}.dll "$repo/dist/Debug/lib/"
 
           msvc_bin=$(dirname "$(command -v cl.exe)")
           export PATH="$msvc_bin:$PATH"
@@ -92,7 +86,7 @@ runs:
 
         cd "$repo/nss"
         CFLAGS='' CXXFLAGS='' LDFLAGS='' ./build.sh "${build_args[@]}" \
-          --with-nspr="$repo/target/dist/include/nspr:$nss_nspr_lib_dir"
+          --with-nspr="$repo/target/dist/include/nspr:$nspr_lib_dir"
 
     - name: Test NSS
       shell: ${{ runner.os == 'Windows' && 'C:\msys64\usr\bin\bash.exe -leo pipefail {0}' || 'bash' }} # zizmor: ignore[misfeature] NSS needs a POSIX shell.
