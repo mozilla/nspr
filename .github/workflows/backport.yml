@@ -1,0 +1,36 @@
+name: nspr4 backport
+
+# Opens a PR against nspr4 for each PR merged into main that is labeled "nspr4: needs backport"
+# and that "nspr4 backport check" found ABI-neutral ("nspr4: backportable").
+# Never runs PR code: checks out the base branch and only cherry-picks merged commits.
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] never checks out or runs PR code
+    types: [closed, labeled]
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+
+jobs:
+  backport:
+    name: Backport to nspr4
+    if: >
+      github.event.pull_request.merged &&
+      contains(github.event.pull_request.labels.*.name, 'nspr4: needs backport') &&
+      contains(github.event.pull_request.labels.*.name, 'nspr4: backportable') &&
+      (github.event.action == 'closed' || github.event.label.name == 'nspr4: needs backport')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Push the backport branch.
+      pull-requests: write # Open the backport PR and comment on the original.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true # zizmor: ignore[artipacked] backport-action pushes with these credentials
+
+      - uses: korthout/backport-action@8560fb503c275d433c56f05a2f64850093baa9f7 # v4.7.0
+        with:
+          label_pattern: ""
+          target_branches: nspr4
