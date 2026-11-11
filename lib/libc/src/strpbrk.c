@@ -12,7 +12,7 @@ PL_strpbrk(const char* s, const char* list)
         return (char*)0;
     }
 
-    return strpbrk(s, list);
+    return (char*)strpbrk(s, list);
 }
 
 PR_IMPLEMENT(char*)
