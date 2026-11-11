@@ -15,7 +15,7 @@ PL_strstr(const char* big, const char* little)
         return (char*)0;
     }
 
-    return strstr(big, little);
+    return (char*)strstr(big, little);
 }
 
 PR_IMPLEMENT(char*)

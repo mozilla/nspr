@@ -12,7 +12,7 @@ PL_strchr(const char* s, char c)
         return (char*)0;
     }
 
-    return strchr(s, c);
+    return (char*)strchr(s, c);
 }
 
 PR_IMPLEMENT(char*)
@@ -22,7 +22,7 @@ PL_strrchr(const char* s, char c)
         return (char*)0;
     }
 
-    return strrchr(s, c);
+    return (char*)strrchr(s, c);
 }
 
 PR_IMPLEMENT(char*)
