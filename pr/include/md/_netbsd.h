@@ -76,6 +76,8 @@
 #define JB_SP_INDEX 2
 #elif defined(__mips__)
 #define JB_SP_INDEX 4
+#elif defined(__amd64__)
+#define JB_SP_INDEX _JB_RSP
 #elif defined(__alpha__)
 #define JB_SP_INDEX 34
 #elif defined(__arm32__)
@@ -87,6 +89,8 @@
 #else
 #define JB_SP_INDEX _JB_REG_R13
 #endif
+#elif defined(__aarch64__)
+#define JB_SP_INDEX _JB_SP
 #else
 #error "Need to define SP index in jmp_buf here"
 #endif
