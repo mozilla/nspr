@@ -138,7 +138,7 @@ PL_GetNextOpt(PLOptState* opt)
     ** options supplied.
     */
     if (internal->minus == 2) {
-        char* foundEqual = strchr(internal->xargv, '=');
+        const char* foundEqual = strchr(internal->xargv, '=');
         PRIntn optNameLen =
             foundEqual ? (foundEqual - internal->xargv) : strlen(internal->xargv);
         const PLLongOpt* longOpt = internal->longOpts;
